@@ -22,7 +22,7 @@
     
     #chat-container {
       position: fixed;
-      bottom: 90px;
+      bottom: 20px;
       right: 20px;
       width: 400px;
       height: 650px;
@@ -31,10 +31,14 @@
       box-shadow: 0 10px 40px rgba(0,0,0,0.25);
       border: 3px solid var(--pink);
       overflow: hidden;
-      display: none;
+      display: flex;
       flex-direction: column;
       z-index: 9999;
       animation: slideUp 0.3s ease-out;
+    }
+    
+    #open-btn {
+      display: none;
     }
     
     @keyframes slideUp {
@@ -290,17 +294,6 @@
     
     .avatar svg { width: 100%; height: 100%; }
     
-    .close-btn {
-      margin-left: auto;
-      background: none;
-      border: none;
-      color: white;
-      font-size: 2rem;
-      cursor: pointer;
-      position: relative;
-      z-index: 2;
-    }
-    
     .action-buttons {
       display: flex;
       gap: 8px;
@@ -395,7 +388,6 @@
       <h2>Hi! I'm Flamey</h2>
       <p>Wrights Heating & Gas</p>
     </div>
-    <button class="close-btn" onclick="closeChat()">×</button>
   </div>
 
   <div id="messages"></div>
@@ -505,7 +497,7 @@ const knowledgeBase = {
   
   pricing: {
     boilerService: {
-      typical: "£70-£120",
+      typical: "£100",
       detailed: "UK average is £80-£120. Our prices are competitive and we provide transparent quotes.",
       includes: [
         "Visual inspection of boiler and components",
@@ -987,26 +979,16 @@ function quick(type) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
-// CHAT UI CONTROLS
+// CHAT UI - ALWAYS VISIBLE
 // ════════════════════════════════════════════════════════════════════════════════
-function closeChat() {
-  document.getElementById('chat-container').style.display = 'none';
-}
 
-function openChat() {
-  const chat = document.getElementById('chat-container');
-  chat.style.display = 'flex';
-  
-  if (document.querySelectorAll('#messages > div').length === 0) {
-    setTimeout(() => {
-      addMsg(generateResponse({ intent: 'greeting' }, ''), true);
-    }, 300);
-  }
-  
-  setTimeout(() => document.getElementById('user-input').focus(), 400);
-}
+// Show greeting message on page load
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(() => {
+    addMsg(generateResponse({ intent: 'greeting' }, ''), true);
+  }, 500);
+});
 
-document.getElementById('open-btn').onclick = openChat;
 document.getElementById('user-input').onkeypress = (e) => {
   if (e.key === 'Enter') send();
 };
