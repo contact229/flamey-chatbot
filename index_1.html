@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flamey – Wrights Heating & Gas Services Assistant</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    :root {
+      --pink: #e91e93;
+      --deep-purple: #5a2d82;
+      --light-pink: #ff1493;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin:0;
+      font-family: system-ui, sans-serif;
+      background:#f8f9fa;
+    }
+
+    #chat-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 400px;
+      height: 650px;
+      background: transparent;
+      border-radius: 24px;
+      box-shadow: none;
+      border: none;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      z-index: 9999;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    #open-btn {
+      display: none;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #header {
+      background: linear-gradient(135deg, var(--pink), var(--light-pink), var(--deep-purple));
+      color: white;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+    }
+
+    #header h2 { margin:0; font-size: 1.4rem; position: relative; z-index: 1; }
+    #header p { margin:0; font-size: 0.9rem; opacity: 0.9; position: relative; z-index: 1; }
+
+    #messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      background: transparent;
+    }
+
+    #messages::-webkit-scrollbar { width: 6px; }
+    #messages::-webkit-scrollbar-track { background: #f1f1f1; }
+    #messages::-webkit-scrollbar-thumb { background: var(--pink); border-radius: 3px; }
+
+    .msg {
+      margin-bottom: 12px;
+      max-width: 85%;
+      line-height: 1.5;
+      font-size: 15px;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .bot {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .bot-bubble {
+      background: linear-gradient(to bottom right, #fffaf5, #ffffff);
+      border: 2px solid var(--pink);
+      border-radius: 20px;
+      border-top-left-radius: 4px;
+      padding: 14px 18px;
+      color: #333;
+    }
+
+    .bot-bubble strong {
+      color: var(--deep-purple);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .bot-bubble ul {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+
+    .bot-bubble li {
+      margin: 4px 0;
+    }
+
+    .price-box {
+      background: linear-gradient(135deg, #fff4f9, #f8f9fa);
+      border: 2px solid var(--pink);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: 10px 0;
+      font-weight: 600;
+      color: var(--deep-purple);
+    }
+
+    .price-box .price {
+      font-size: 1.4rem;
+      color: var(--pink);
+      display: block;
+      margin: 4px 0;
+    }
+
+    .info-box {
+      background: #e8f4f8;
+      border-left: 4px solid #17a2b8;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    .user {
+      margin-left: auto;
+      background: var(--deep-purple);
+      color: white;
+      border-radius: 20px;
+      border-top-right-radius: 4px;
+      padding: 12px 16px;
+      text-align: right;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+    }
+
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--pink);
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30% { transform: translateY(-10px); opacity: 1; }
+    }
+
+    #quick {
+      padding: 12px 16px;
+      border-top: 1px solid rgba(238, 238, 238, 0.5);
+      background: transparent;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .quick-btn {
+      font-size: 0.82rem;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: #ffe4f0;
+      color: var(--pink);
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .quick-btn:hover {
+      background: var(--pink);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    #input-area {
+      padding: 16px;
+      border-top: 1px solid rgba(238, 238, 238, 0.5);
+      background: transparent;
+      display: flex;
+      gap: 10px;
+    }
+
+    #user-input {
+      flex: 1;
+      padding: 12px 18px;
+      border: 2px solid #ddd;
+      border-radius: 999px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #user-input:focus {
+      border-color: var(--pink);
+      box-shadow: 0 0 0 3px rgba(233,30,147,0.1);
+    }
+
+    #send-btn {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--pink), var(--light-pink));
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #send-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(233,30,147,0.4);
+    }
+
+    #send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #open-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 70px;
+      height: 70px;
+      background: linear-gradient(135deg, var(--pink), var(--light-pink), var(--deep-purple));
+      color: white;
+      border: none;
+      border-radius: 50%;
+      box-shadow: 0 6px 20px rgba(233,30,147,0.4);
+      cursor: pointer;
+      z-index: 9999;
+      animation: pulse 2s infinite;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #btn-flamey {
+      width: 100%;
+      height: 100%;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    #btn-flamey svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .avatar {
+      width: 52px;
+      height: 52px;
+      flex-shrink: 0;
+    }
+
+    .avatar svg { width: 100%; height: 100%; }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 2px solid var(--pink);
+      background: white;
+      color: var(--pink);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.85rem;
+    }
+
+    .action-btn:hover {
+      background: var(--pink);
+      color: white;
+    }
+
+    .contact-form {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--deep-purple);
+      margin-bottom: 4px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--pink);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, var(--pink), var(--light-pink));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    @media (max-width: 480px) {
+      #chat-container {
+        width: calc(100vw - 20px);
+        height: calc(100vh - 90px);
+        right: 10px;
+        bottom: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<button id="open-btn" aria-hidden="true" tabindex="-1">
+  <div id="btn-flamey"></div>
+</button>
+
+<div id="chat-container" role="complementary" aria-label="Flamey chat assistant">
+  <div id="header">
+    <div class="avatar" id="flamey-avatar" aria-hidden="true"></div>
+    <div>
+      <h2>Hi! I'm Flamey</h2>
+      <p>Wrights Heating & Gas Services Assistant</p>
+    </div>
+  </div>
+
+  <div id="messages" role="log" aria-live="polite" aria-label="Chat messages"></div>
+
+  <div id="quick" role="group" aria-label="Quick questions">
+    <button class="quick-btn" onclick="quick('prices')"><i class="fas fa-pound-sign" aria-hidden="true"></i> Prices</button>
+    <button class="quick-btn" onclick="quick('boiler-service')"><i class="fas fa-tools" aria-hidden="true"></i> Boiler Service</button>
+    <button class="quick-btn" onclick="quick('installation')"><i class="fas fa-wrench" aria-hidden="true"></i> Installation</button>
+    <button class="quick-btn" onclick="quick('areas')"><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Coverage</button>
+    <button class="quick-btn" onclick="quick('water-softener')"><i class="fas fa-tint" aria-hidden="true"></i> Water Softener</button>
+    <button class="quick-btn" onclick="quick('lpg')"><i class="fas fa-gas-pump" aria-hidden="true"></i> LPG</button>
+    <button class="quick-btn" onclick="quick('repairs')"><i class="fas fa-screwdriver" aria-hidden="true"></i> Repairs</button>
+  </div>
+
+  <div id="input-area">
+    <input id="user-input" type="text" placeholder="Ask me anything…" autocomplete="off" aria-label="Type your message"/>
+    <button id="send-btn" aria-label="Send message"><i class="fas fa-paper-plane" aria-hidden="true"></i></button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════════════════════════
+// Sign up free at https://web3forms.com with contact@wrightsgas.co.uk, confirm the
+// verification email, then paste your Access Key below. The key is safe to leave
+// visible in this file — Web3Forms only ever sends mail to the address tied to it.
+const CONFIG = {
+  WEB3FORMS_ACCESS_KEY: '9b317a38-54d3-4c6c-8cea-cec159b91a18'
+};
+
+function web3formsConfigured() {
+  return !!CONFIG.WEB3FORMS_ACCESS_KEY && !CONFIG.WEB3FORMS_ACCESS_KEY.startsWith('PASTE_');
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// FLAMEY MASCOT SVG
+// ════════════════════════════════════════════════════════════════════════════════
+const flamey = `<svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="200" cy="480" rx="80" ry="15" fill="rgba(0,0,0,0.1)"/>
+    <path d="M 200 450 Q 160 440 150 400 Q 140 360 145 320 Q 150 280 160 250 Q 170 220 180 200 Q 185 180 190 160 Q 195 140 200 120 Q 205 140 210 160 Q 215 180 220 200 Q 230 220 240 250 Q 250 280 255 320 Q 260 360 250 400 Q 240 440 200 450 Z" fill="url(#flameGradient)"/>
+    <path d="M 170 350 Q 150 340 140 310 Q 135 290 140 270 Q 145 250 155 235 Q 165 220 170 210 Q 175 200 178 185 Q 180 200 182 215 Q 185 230 190 250 Q 192 270 190 290 Q 188 310 180 330 Q 175 345 170 350 Z" fill="url(#accentGradient1)"/>
+    <path d="M 230 350 Q 250 340 260 310 Q 265 290 260 270 Q 255 250 245 235 Q 235 220 230 210 Q 225 200 222 185 Q 220 200 218 215 Q 215 230 210 250 Q 208 270 210 290 Q 212 310 220 330 Q 225 345 230 350 Z" fill="url(#accentGradient2)"/>
+    <circle cx="200" cy="280" r="65" fill="#ffffff"/>
+    <circle cx="200" cy="280" r="63" fill="#fef9f3"/>
+    <g id="eyes">
+        <ellipse cx="185" cy="270" rx="12" ry="18" fill="#5a2d82"/>
+        <ellipse cx="187" cy="268" rx="5" ry="7" fill="#ffffff"/>
+        <circle cx="189" cy="272" r="2" fill="#ffffff"/>
+        <ellipse cx="215" cy="270" rx="12" ry="18" fill="#5a2d82"/>
+        <ellipse cx="217" cy="268" rx="5" ry="7" fill="#ffffff"/>
+        <circle cx="219" cy="272" r="2" fill="#ffffff"/>
+    </g>
+    <path d="M 180 295 Q 200 310 220 295" stroke="#5a2d82" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="165" cy="285" rx="10" ry="7" fill="#ff9bb3" opacity="0.5"/>
+    <ellipse cx="235" cy="285" rx="10" ry="7" fill="#ff9bb3" opacity="0.5"/>
+    <rect x="155" y="330" width="90" height="15" rx="3" fill="#5a2d82"/>
+    <rect x="157" y="332" width="86" height="11" rx="2" fill="#764ba2"/>
+    <g transform="translate(175, 337)">
+        <rect x="0" y="0" width="4" height="12" fill="#e91e93" rx="1"/>
+        <circle cx="2" cy="2" r="3" fill="none" stroke="#e91e93" stroke-width="1.5"/>
+    </g>
+    <g transform="translate(195, 335)">
+        <rect x="0" y="0" width="3" height="14" fill="#ff1493"/>
+        <rect x="0" y="0" width="3" height="2" fill="#ff69b4"/>
+    </g>
+    <g id="leftArm">
+        <ellipse cx="140" cy="300" rx="18" ry="28" fill="url(#armGradient)" transform="rotate(-20 140 300)"/>
+        <ellipse cx="132" cy="275" rx="8" ry="12" fill="url(#armGradient)" transform="rotate(-30 132 275)"/>
+    </g>
+    <g id="rightArm">
+        <ellipse cx="260" cy="300" rx="18" ry="28" fill="url(#armGradient)" transform="rotate(20 260 300)"/>
+        <g transform="translate(265, 285) rotate(30)">
+            <rect x="0" y="0" width="6" height="40" fill="#cccccc" rx="2"/>
+            <circle cx="3" cy="3" r="8" fill="none" stroke="#cccccc" stroke-width="3"/>
+            <circle cx="3" cy="37" r="5" fill="#999999"/>
+        </g>
+    </g>
+    <g opacity="0.8">
+        <path d="M 280 200 L 282 208 L 290 210 L 282 212 L 280 220 L 278 212 L 270 210 L 278 208 Z" fill="#e91e93"/>
+        <path d="M 120 240 L 122 246 L 128 248 L 122 250 L 120 256 L 118 250 L 112 248 L 118 246 Z" fill="#ff1493"/>
+        <path d="M 300 320 L 301 324 L 305 325 L 301 326 L 300 330 L 299 326 L 295 325 L 299 324 Z" fill="#e91e93"/>
+    </g>
+    <defs>
+        <linearGradient id="flameGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#e91e93;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#ff1493;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#5a2d82;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="accentGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#5a2d82;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="accentGradient2" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#ff1493;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#e91e93;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="armGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#ff1493;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#e91e93;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+</svg>`;
+
+document.getElementById('flamey-avatar').innerHTML = flamey;
+document.getElementById('btn-flamey').innerHTML = flamey;
+
+// ════════════════════════════════════════════════════════════════════════════════
+// KNOWLEDGE BASE - facts about Wrights Heating & Gas Services
+// ════════════════════════════════════════════════════════════════════════════════
+const knowledgeBase = {
+  company: {
+    name: "Wrights Heating & Gas Services Ltd",
+    phone: ["01920 468674", "07971252440"],
+    experience: "19 years",
+    rating: "5 Star Google reviews",
+    gasRafeNumber: "529065",
+    vatNumber: "387001700",
+    qualifications: ["Fully qualified", "Gas Safe Registered", "Fully insured"],
+    website: "www.wrightsgas.co.uk"
+  },
+
+  pricing: {
+    boilerService: {
+      typical: "£100-£120",
+      detailed: "UK average is £80-£120. Our prices are competitive and we provide transparent quotes.",
+      includes: [
+        "Visual inspection of boiler and components",
+        "Safety checks including gas pressure and carbon monoxide",
+        "Cleaning of key components",
+        "Performance testing",
+        "Gas Safe certification"
+      ],
+      note: "Annual service recommended to maintain warranty and safety"
+    },
+    landlordCertificate: {
+      service: "Gas Safety Certificates",
+      requirement: "Required every 12 months by law",
+      includes: ["All gas appliance checks", "Safety certification", "Full compliance documentation"]
+    }
+  },
+
+  services: {
+    boilerInstallation: {
+      name: "Boiler Installation & Replacements",
+      description: "New boiler installations and complete boiler replacements for domestic and commercial properties",
+      benefits: [
+        "Energy efficient modern boilers",
+        "Reduced heating bills",
+        "Expert installation by Gas Safe engineers",
+        "Competitive pricing with transparent quotes"
+      ],
+      brands: ["Worcester Bosch", "Vaillant", "Ideal", "Baxi"],
+      keywords: ["new boiler", "boiler replacement", "install boiler", "boiler upgrade"]
+    },
+
+    boilerRepairs: {
+      name: "Boiler & Heating Repairs",
+      description: "Expert repair services for all boiler makes and models",
+      services: [
+        "Radiator replacements and relocations",
+        "Valve replacements",
+        "Faulty controls repair",
+        "Smart thermostats installation",
+        "Powerflushing",
+        "Pipework repairs",
+        "Pump replacements",
+        "System chemical checks"
+      ],
+      keywords: ["broken boiler", "boiler repair", "heating not working", "radiator", "leak"]
+    },
+
+    applianceServices: {
+      name: "Appliance Installation & Repairs",
+      description: "Installation, servicing and repair for gas and hot water appliances",
+      services: [
+        "Cooker installation, service and repair",
+        "Fire service and repair",
+        "Gas hob installation, service and repair",
+        "Underground pipework and fusion welding",
+        "Unvented and vented hot water cylinder installation, service and repair"
+      ],
+      keywords: ["cooker", "hob", "fire", "hot water cylinder", "appliance"]
+    },
+
+    lpgServices: {
+      name: "LPG Installations & Repairs",
+      description: "Comprehensive LPG gas services for properties not connected to mains gas, including tank installation and maintenance",
+      keywords: ["lpg", "propane", "bottled gas", "tank"]
+    },
+
+    plumbingBathrooms: {
+      name: "Plumbing Repairs & Bathrooms",
+      description: "Full plumbing and bathroom services, including drainage repairs",
+      keywords: ["plumbing", "bathroom", "tap", "shower", "toilet", "drain", "drainage"]
+    },
+
+    waterSofteners: {
+      name: "Water Softener Installation",
+      description: "Our area has incredibly hard water. A water softener offers many advantages:",
+      benefits: [
+        "Reduces maintenance on sanitary ware, showers and taps",
+        "Protects white goods from limescale",
+        "Reduces limescale buildup in hot water cylinders",
+        "Improves efficiency and reduces running costs",
+        "Softer skin and hair",
+        "Less cleaning required"
+      ],
+      recommendation: "Highly recommended for this area due to hard water",
+      keywords: ["water softener", "hard water", "limescale", "scale"]
+    }
+  },
+
+  coverage: {
+    main: ["Hertfordshire", "North London"],
+    specific: ["Ware", "Hertford", "Hoddesdon", "Broxbourne", "Welwyn Garden City", "Harlow", "Stevenage", "Bishops Stortford", "Potters Bar"],
+    surrounding: "and surrounding areas",
+    keywords: ["area", "cover", "location", "where", "serve"]
+  },
+
+  emergency: {
+    available: false,
+    response: "We can arrange appointments as soon as possible. For gas emergencies, call National Gas Emergency Service on 0800 111 999",
+    contact: "Call us on 01920 468674 or 07971252440 to discuss urgent appointments",
+    keywords: ["emergency", "urgent", "broken", "no heating", "leak", "asap", "now"]
+  },
+
+  gasSafety: {
+    registered: true,
+    number: "529065",
+    info: "Gas Safe Register is the official list of gas engineers qualified to work safely and legally on gas appliances. By law, all gas engineers must be on the Gas Safe Register.",
+    landlordDuties: "Landlords must have all gas appliances checked every 12 months by a Gas Safe registered engineer",
+    warning: "Badly fitted and poorly serviced appliances can cause gas leaks, fires, explosions and carbon monoxide poisoning"
+  }
+};
+
+// ════════════════════════════════════════════════════════════════════════════════
+// LIGHTWEIGHT TYPO TOLERANCE
+// Swaps obviously-mistyped domain words ("bolier", "instalation") for their correct
+// spelling before intent matching runs, without any external library or API call.
+// ════════════════════════════════════════════════════════════════════════════════
+function levenshtein(a, b) {
+  // Optimal-string-alignment distance: like Levenshtein but also treats an
+  // adjacent transposition ("bolier" -> "boiler") as a single edit, since
+  // swapped letters are one of the most common typing mistakes.
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const d = [];
+  for (let i = 0; i <= m; i++) d.push(new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) d[i][0] = i;
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[m][n];
+}
+
+const FUZZY_TERMS = [
+  'boiler', 'service', 'serviced', 'servicing', 'installation', 'install', 'repair',
+  'repairs', 'broken', 'landlord', 'certificate', 'softener', 'water', 'plumbing',
+  'bathroom', 'cooker', 'appliance', 'emergency', 'urgent', 'price', 'prices', 'quote',
+  'cover', 'coverage', 'area', 'lpg', 'propane', 'radiator', 'thermostat', 'cylinder',
+  'pressure', 'leaking', 'heating'
+];
+
+function normalizeTypos(msg) {
+  return msg.split(/\s+/).map(word => {
+    const clean = word.replace(/[^a-z]/gi, '').toLowerCase();
+    if (clean.length < 4) return word;
+    let best = null, bestDist = Infinity;
+    for (const term of FUZZY_TERMS) {
+      if (Math.abs(term.length - clean.length) > 2) continue;
+      const d = levenshtein(clean, term);
+      if (d < bestDist) { bestDist = d; best = term; }
+    }
+    const threshold = clean.length <= 6 ? 1 : 2;
+    return (best && bestDist > 0 && bestDist <= threshold) ? best : word;
+  }).join(' ');
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// INTENT RECOGNITION — HELP-FIRST MENTALITY
+// Checked in order of priority: safety first, then price, then specific services,
+// falling back to a general-help menu only when nothing else matches.
+// ════════════════════════════════════════════════════════════════════════════════
+function analyzeIntent(userMessageRaw) {
+  const msg = normalizeTypos(userMessageRaw.toLowerCase());
+
+  // HARD URGENCY (safety-critical only — plain "broken"/"not working" is NOT
+  // treated as urgent on its own, since that routes to the repairs intent instead)
+  if (/(gas smell|smell(ing)? gas|smell of gas|gas leak|leaking gas|flooding|\bflood\b|\bemergency\b|\burgent\b|\basap\b|right now|immediately)/.test(msg)) {
+    return { intent: 'urgent_booking', confidence: 0.98 };
+  }
+
+  // PRICE INQUIRIES
+  if (/(how much|price|cost|charge|fee|pricing|quote)/.test(msg)) {
+    if (/(boiler service|service boiler|annual service)/.test(msg)) {
+      return { intent: 'price_boiler_service', confidence: 0.95 };
+    }
+    if (/(new boiler|boiler install|replacement)/.test(msg)) {
+      return { intent: 'price_installation', confidence: 0.95 };
+    }
+    if (/(repair|fix)/.test(msg)) {
+      return { intent: 'price_repair', confidence: 0.9 };
+    }
+    if (/(landlord|certificate|gas safe|cp12)/.test(msg)) {
+      return { intent: 'price_landlord_cert', confidence: 0.95 };
+    }
+    return { intent: 'pricing_general', confidence: 0.85 };
+  }
+
+  // GREETING
+  if (/^(hi|hello|hey|good morning|good afternoon|good evening|hiya)\b/.test(msg)) {
+    return { intent: 'greeting', confidence: 0.9 };
+  }
+
+  // SERVICE-SPECIFIC INQUIRIES
+  if (/(boiler service|annual service|service boiler|boiler check)/.test(msg)) {
+    return { intent: 'boiler_service_info', confidence: 0.9 };
+  }
+
+  if (/(water softener|hard water|limescale|scale)/.test(msg)) {
+    return { intent: 'water_softener', confidence: 0.9 };
+  }
+
+  if (/(\blpg\b|propane|bottled gas|gas tank)/.test(msg)) {
+    return { intent: 'lpg', confidence: 0.9 };
+  }
+
+  if (/(plumbing|bathroom|\btap\b|shower|toilet|\bdrain\b|drainage)/.test(msg)) {
+    return { intent: 'plumbing', confidence: 0.85 };
+  }
+
+  if (/(cooker|\bhob\b|\bfire\b|hot water cylinder|cylinder)/.test(msg)) {
+    return { intent: 'appliances', confidence: 0.85 };
+  }
+
+  if (/(new boiler|boiler install|\binstallation\b|\binstall\b|replacement|upgrade)/.test(msg)) {
+    return { intent: 'installation', confidence: 0.9 };
+  }
+
+  if (/(repair|fix|broken|fault|not working|stopped working|no heating|no hot water|leak|leaking|pilot light|no pressure)/.test(msg)) {
+    return { intent: 'repairs', confidence: 0.85 };
+  }
+
+  if (/(landlord|certificate|cp12|gas safe check|letting)/.test(msg)) {
+    return { intent: 'landlord_cert', confidence: 0.9 };
+  }
+
+  // LOCATION/COVERAGE
+  if (/(\barea\b|\bcover\b|location|\bwhere\b|region|do you serve|come to|postcode)/.test(msg)) {
+    return { intent: 'coverage', confidence: 0.85 };
+  }
+
+  // BOOKING/CONTACT
+  if (/(\bbook\b|appointment|\bvisit\b|arrange|schedule|come out)/.test(msg)) {
+    return { intent: 'booking', confidence: 0.9 };
+  }
+
+  return { intent: 'general_help', confidence: 0.6 };
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// CONVERSATION CONTEXT — lets short follow-ups ("ok", "how much is that") resolve
+// against whatever was just being discussed, instead of being treated as brand-new,
+// context-free questions every time.
+// ════════════════════════════════════════════════════════════════════════════════
+const conversationContext = {
+  lastIntent: null,
+  greetedOnce: false,
+  fallbackCount: 0
+};
+
+const FOLLOWUP_RE = /^(ok|okay|yes|yeah|yep|sure|please do|sounds good|go ahead|book it|book that|do that|and that|what about that|how much is that|how much for that)[.!]?$/i;
+
+const FOLLOWUP_BOOKING_TYPE = {
+  boiler_service_info: 'service', price_boiler_service: 'service',
+  installation: 'quote', price_installation: 'quote',
+  repairs: 'repair', price_repair: 'repair',
+  landlord_cert: 'certificate', price_landlord_cert: 'certificate',
+  water_softener: 'quote', pricing_general: 'quote', coverage: 'quote',
+  lpg: 'quote', plumbing: 'repair', appliances: 'quote'
+};
+
+function resolveFollowup(rawText) {
+  const trimmed = rawText.trim();
+  if (!FOLLOWUP_RE.test(trimmed) || !conversationContext.lastIntent) return null;
+  const bookingType = FOLLOWUP_BOOKING_TYPE[conversationContext.lastIntent];
+  if (!bookingType) return null;
+  return { intent: 'followup_booking', confidence: 0.8, bookingType };
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// RESPONSE GENERATION — HELP-FIRST APPROACH
+// ════════════════════════════════════════════════════════════════════════════════
+function generateResponse(intent, userMessage) {
+  switch(intent.intent) {
+    case 'greeting': {
+      if (conversationContext.greetedOnce) {
+        return `Hey again! 👋 What else can I help with?` + generateActionButtons(['prices', 'book_service', 'call_now']);
+      }
+      conversationContext.greetedOnce = true;
+      return `Hello! 👋 I'm Flamey from ${knowledgeBase.company.name}.\n\nWe've been serving ${knowledgeBase.company.experience} with ${knowledgeBase.company.rating}!\n\n<strong>I'm here to help you with:</strong>\n• Pricing information\n• Boiler services & repairs\n• New installations\n• Water softeners & LPG\n• Plumbing & bathrooms\n• Landlord certificates\n\n<strong>What can I help you with today?</strong>`;
+    }
+
+    case 'urgent_booking':
+      return `<strong>🔧 Urgent Assistance Needed</strong>\n\nI understand you need help quickly! While we don't offer emergency call-outs, we can arrange an appointment as soon as possible.\n\n<div class="info-box">⚠️ <strong>If you smell gas:</strong> Call the National Gas Emergency Service immediately on <strong>0800 111 999</strong></div>\n\n<div class="price-box">📞 Call us to discuss urgent appointments:<br><strong>01920 468674</strong> or <strong>07971252440</strong></div>\n\nOr fill in the form below and we'll contact you right away:` +
+      generateActionButtons(['book_repair', 'call_now']);
+
+    case 'price_boiler_service':
+      return `<strong>💰 Boiler Service Pricing</strong>\n\n<div class="price-box">Typical Cost<span class="price">${knowledgeBase.pricing.boilerService.typical}</span>UK average price range</div>\n\n<strong>What's Included:</strong>\n${knowledgeBase.pricing.boilerService.includes.map(item => `✓ ${item}`).join('\n')}\n\n<div class="info-box">💡 <strong>Good to know:</strong> Annual servicing is recommended to maintain your warranty and ensure safe operation. We provide Gas Safe certification with every service.</div>\n\n<strong>Would you like to:</strong>` +
+      generateActionButtons(['book_service', 'more_services']);
+
+    case 'price_installation':
+      return `<strong>💰 New Boiler Installation Pricing</strong>\n\nBoiler installation costs vary based on:\n• Boiler type (combi, system, regular)\n• Boiler size and brand\n• Complexity of installation\n• Any additional work needed\n\n<strong>Why choose us:</strong>\n✓ ${knowledgeBase.company.experience} experience\n✓ Gas Safe registered engineers\n✓ Competitive transparent pricing\n✓ Quality brands: ${knowledgeBase.services.boilerInstallation.brands.join(', ')}\n\n<div class="info-box">💡 Modern boilers can save you money on heating bills through improved efficiency!</div>\n\n<strong>I'd love to arrange a free, no-obligation quote for you:</strong>` +
+      generateActionButtons(['book_quote', 'call_now']);
+
+    case 'price_repair':
+      return `<strong>💰 Boiler Repair Pricing</strong>\n\nRepair costs depend on:\n• The specific issue\n• Parts required\n• Labour time\n\nWe provide honest, transparent pricing before starting any work.\n\n<strong>Common repairs we handle:</strong>\n${knowledgeBase.services.boilerRepairs.services.slice(0, 6).map(s => `• ${s}`).join('\n')}\n\n<div class="info-box">⚡ Fast turnaround on parts ordering - we work with all major brands</div>\n\n<strong>Let's get your heating sorted:</strong>` +
+      generateActionButtons(['book_repair', 'emergency_call']);
+
+    case 'price_landlord_cert':
+      return `<strong>💰 Landlord Gas Safety Certificates</strong>\n\n${knowledgeBase.pricing.landlordCertificate.requirement}\n\n<strong>What's included:</strong>\n${knowledgeBase.pricing.landlordCertificate.includes.map(i => `✓ ${i}`).join('\n')}\n\n<div class="info-box">⚖️ <strong>Legal Requirement:</strong> Landlords must have all gas appliances checked every 12 months by a Gas Safe registered engineer (No. ${knowledgeBase.gasSafety.number})</div>\n\n<strong>Ready to book your inspection?</strong>` +
+      generateActionButtons(['book_cert', 'call_now']);
+
+    case 'pricing_general':
+      return `<strong>💰 Our Pricing</strong>\n\nWe believe in transparent, competitive pricing. Every job is different, so costs vary based on your specific needs.\n\n<strong>Quick price guide:</strong>\n• Boiler Service: ${knowledgeBase.pricing.boilerService.typical}\n• New Boiler Installation: Free quote required\n• Repairs: Depends on issue & parts\n• Landlord Certificates: Competitive rates\n\n<strong>What makes us great value:</strong>\n✓ ${knowledgeBase.company.experience} experience\n✓ No hidden fees\n✓ Quality workmanship guaranteed\n✓ ${knowledgeBase.company.rating}\n\n<strong>What service are you interested in?</strong>` +
+      generateActionButtons(['boiler_service', 'installation', 'repairs', 'get_quote']);
+
+    case 'boiler_service_info':
+      return `<strong>🔧 Annual Boiler Service</strong>\n\n${knowledgeBase.pricing.boilerService.detailed}\n\n<strong>Why service your boiler annually?</strong>\n• Maintains efficiency & saves money\n• Keeps warranty valid\n• Prevents breakdowns\n• Ensures safety\n• Gas Safe certification\n\n<strong>What we check:</strong>\n${knowledgeBase.pricing.boilerService.includes.map(i => `✓ ${i}`).join('\n')}\n\n<div class="price-box">Price Range<span class="price">${knowledgeBase.pricing.boilerService.typical}</span></div>` +
+      generateActionButtons(['book_service', 'call_now']);
+
+    case 'water_softener':
+      return `<strong>💧 Water Softener Installation</strong>\n\n${knowledgeBase.services.waterSofteners.description}\n\n<strong>Benefits:</strong>\n${knowledgeBase.services.waterSofteners.benefits.map(b => `✓ ${b}`).join('\n')}\n\n<div class="info-box">🌊 <strong>${knowledgeBase.services.waterSofteners.recommendation}</strong></div>\n\n<strong>Interested in finding out more?</strong>` +
+      generateActionButtons(['book_quote', 'call_now']);
+
+    case 'lpg':
+      return `<strong>⛽ LPG Installations & Repairs</strong>\n\n${knowledgeBase.services.lpgServices.description}\n\n<div class="info-box">🏡 Not on mains gas? LPG is a reliable alternative for heating, cooking and hot water, and we handle installation, tank setup and ongoing maintenance.</div>\n\n<strong>Want a quote for your property?</strong>` +
+      generateActionButtons(['book_quote', 'call_now']);
+
+    case 'plumbing':
+      return `<strong>🚿 Plumbing & Bathroom Services</strong>\n\n${knowledgeBase.services.plumbingBathrooms.description}\n\n<strong>We also work alongside David Lloyd Clubs on plumbing and drainage maintenance</strong>, so your home gets the same standard of work.\n\n<strong>Need something sorted?</strong>` +
+      generateActionButtons(['book_repair', 'call_now']);
+
+    case 'appliances':
+      return `<strong>🔥 Appliance Installation & Repairs</strong>\n\n${knowledgeBase.services.applianceServices.description}\n\n<strong>Services include:</strong>\n${knowledgeBase.services.applianceServices.services.map(s => `✓ ${s}`).join('\n')}\n\n<strong>What do you need help with?</strong>` +
+      generateActionButtons(['book_service', 'call_now']);
+
+    case 'installation':
+      return `<strong>🔥 Boiler Installation & Replacements</strong>\n\n${knowledgeBase.services.boilerInstallation.description}\n\n<strong>Benefits of a new boiler:</strong>\n${knowledgeBase.services.boilerInstallation.benefits.map(b => `✓ ${b}`).join('\n')}\n\n<strong>Brands we install:</strong>\n${knowledgeBase.services.boilerInstallation.brands.join(' • ')}\n\n<div class="info-box">💡 Modern boilers can be up to 90% efficient, significantly reducing your energy bills!</div>` +
+      generateActionButtons(['book_quote', 'call_now']);
+
+    case 'repairs':
+      return `<strong>🔧 Boiler & Heating Repairs</strong>\n\nWe repair all makes and models of boilers.\n\n<strong>Services we offer:</strong>\n${knowledgeBase.services.boilerRepairs.services.map(s => `• ${s}`).join('\n')}\n\n<div class="info-box">⚡ Fast service with quick parts ordering from all major brands</div>\n\n<strong>Need a repair?</strong>` +
+      generateActionButtons(['book_repair', 'emergency_call']);
+
+    case 'landlord_cert':
+      return `<strong>📋 Landlord Gas Safety Certificates</strong>\n\n${knowledgeBase.pricing.landlordCertificate.requirement}\n\n<strong>Included:</strong>\n${knowledgeBase.pricing.landlordCertificate.includes.map(i => `✓ ${i}`).join('\n')}\n\n<div class="info-box">⚖️ <strong>Your Legal Responsibility:</strong><br>${knowledgeBase.gasSafety.landlordDuties}</div>\n\n<strong>We're Gas Safe Registered (No. ${knowledgeBase.gasSafety.number})</strong>` +
+      generateActionButtons(['book_cert', 'call_now']);
+
+    case 'coverage':
+      return `<strong>📍 Areas We Cover</strong>\n\nWe serve ${knowledgeBase.coverage.main.join(' and ')} ${knowledgeBase.coverage.surrounding}.\n\n<strong>Including:</strong>\n${knowledgeBase.coverage.specific.join(' • ')}\n\n<div class="info-box">📞 Not sure if we cover your area? Give us a call on <strong>01920 468674</strong> and we'll let you know!</div>\n\n<strong>What can I help you with?</strong>` +
+      generateActionButtons(['book_service', 'get_quote']);
+
+    case 'booking':
+      return showContactForm();
+
+    case 'followup_booking': {
+      const typeLabel = { service: 'your boiler service', quote: 'a quote', repair: 'your repair', certificate: 'your gas safety certificate' }[intent.bookingType] || 'that';
+      return `<strong>Great, let's get ${typeLabel} booked in! 👍</strong>\n\nJust pop your details below and we'll be in touch:` + showContactForm();
+    }
+
+    default: {
+      conversationContext.fallbackCount += 1;
+      const intro = conversationContext.fallbackCount % 2 === 0
+        ? `Hmm, I'm not quite sure about that one — but I've passed it on to the team. In the meantime, here's what I can help with directly: 😊`
+        : `I'm here to help! 😊\n\n<strong>I can assist you with:</strong>\n• Pricing for services\n• Boiler servicing & repairs\n• New boiler installations\n• Plumbing, bathrooms & LPG\n• Landlord certificates\n• Water softeners\n• Coverage areas`;
+      return intro + `\n\n<strong>What would you like to know about?</strong>` + generateActionButtons(['prices', 'book_service', 'call_now']);
+    }
+  }
+}
+
+function generateActionButtons(actions) {
+  const buttonMap = {
+    book_service: '<button class="action-btn" onclick="showBookingForm(\'service\')">📅 Book a Service</button>',
+    book_quote: '<button class="action-btn" onclick="showBookingForm(\'quote\')">📋 Get a Quote</button>',
+    book_repair: '<button class="action-btn" onclick="showBookingForm(\'repair\')">🔧 Book a Repair</button>',
+    book_cert: '<button class="action-btn" onclick="showBookingForm(\'certificate\')">📋 Book Certificate</button>',
+    call_now: '<button class="action-btn" onclick="quickCall()">📞 Call Now</button>',
+    emergency_call: '<button class="action-btn" onclick="quickCall()">📞 Call Now</button>',
+    more_services: '<button class="action-btn" onclick="quick(\'services\')">🔍 See All Services</button>',
+    boiler_service: '<button class="action-btn" onclick="quick(\'boiler-service\')">🔧 Boiler Service</button>',
+    installation: '<button class="action-btn" onclick="quick(\'installation\')">🔥 Installation</button>',
+    repairs: '<button class="action-btn" onclick="quick(\'repairs\')">🛠️ Repairs</button>',
+    get_quote: '<button class="action-btn" onclick="showBookingForm(\'quote\')">📝 Get Quote</button>',
+    prices: '<button class="action-btn" onclick="quick(\'prices\')">💰 View Prices</button>'
+  };
+
+  return '<div class="action-buttons">' +
+    actions.map(a => buttonMap[a] || '').join('') +
+    '</div>';
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// CONTACT FORM
+// ════════════════════════════════════════════════════════════════════════════════
+function showContactForm() {
+  return `<div class="contact-form">
+    <strong>📅 Let's Get You Booked In!</strong>
+    <p style="font-size:0.9rem;margin:8px 0 16px 0;">Fill in your details and we'll be in touch shortly:</p>
+
+    <div class="form-group">
+      <label for="form-name">Full Name *</label>
+      <input type="text" id="form-name" placeholder="John Smith" />
+    </div>
+
+    <div class="form-group">
+      <label for="form-postcode">Postcode *</label>
+      <input type="text" id="form-postcode" placeholder="SG12 9AB" />
+    </div>
+
+    <div class="form-group">
+      <label for="form-phone">Phone Number *</label>
+      <input type="tel" id="form-phone" placeholder="01920 468674" />
+    </div>
+
+    <div class="form-group">
+      <label for="form-email">Email Address</label>
+      <input type="email" id="form-email" placeholder="john@example.com" />
+    </div>
+
+    <div class="form-group">
+      <label for="form-message">How can we help?</label>
+      <textarea id="form-message" rows="3" placeholder="Tell us what you need..."></textarea>
+    </div>
+
+    <button class="submit-btn" onclick="submitContactForm()">
+      <i class="fas fa-paper-plane" aria-hidden="true"></i> Send Request
+    </button>
+
+    <p style="font-size:0.75rem;color:#666;margin-top:12px;text-align:center;">
+      🔒 Your information is secure and will never be shared.
+    </p>
+  </div>`;
+}
+
+function showBookingForm(type) {
+  const typeMessages = {
+    service: 'book a boiler service',
+    quote: 'get a quote',
+    repair: 'book a repair',
+    certificate: 'book a gas safety certificate'
+  };
+
+  addMsg(`I'd like to ${typeMessages[type] || 'get in touch'}`, false);
+  setTimeout(() => {
+    addMsg(showContactForm(), true);
+  }, 800);
+}
+
+function quickCall() {
+  addMsg("I'd like to call you", false);
+  setTimeout(() => {
+    addMsg(`Great! You can reach us on:\n\n<div class="price-box">📞 <strong>01920 468674</strong><br>or<br>📱 <strong>07971252440</strong></div>\n\nWe're always happy to chat!`, true);
+  }, 800);
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// HTML ESCAPING — every piece of this file that renders raw user input (the chat
+// box, and the name/phone/postcode/email/message fields on the booking form) now
+// escapes it first. Previously user input went straight into innerHTML unescaped,
+// which meant anything typed as HTML (e.g. a pasted <img onerror=...> tag) would
+// run directly on the page.
+// ════════════════════════════════════════════════════════════════════════════════
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// WEB3FORMS — lead capture + quiet "couldn't answer this" logging.
+// Replaces the old EmailJS call, which shipped with a placeholder public key and
+// so silently failed on every submission.
+// ════════════════════════════════════════════════════════════════════════════════
+async function sendToWeb3Forms(payload) {
+  if (!web3formsConfigured()) return { success: false, skipped: true };
+  try {
+    const res = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ access_key: CONFIG.WEB3FORMS_ACCESS_KEY, ...payload })
+    });
+    const data = await res.json().catch(() => ({}));
+    return { success: res.ok && !!data.success };
+  } catch (error) {
+    console.error('Web3Forms submission error:', error);
+    return { success: false };
+  }
+}
+
+async function logUnanswered(question) {
+  try {
+    const key = question.trim().toLowerCase();
+    if (!key) return;
+    const logged = JSON.parse(sessionStorage.getItem('flamey_logged_gaps') || '[]');
+    if (logged.includes(key) || logged.length >= 5) return;
+    logged.push(key);
+    sessionStorage.setItem('flamey_logged_gaps', JSON.stringify(logged));
+    await sendToWeb3Forms({
+      subject: 'Flamey could not answer a customer question',
+      from_name: 'Flamey chatbot',
+      question: question,
+      page: location.href,
+      timestamp: new Date().toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short' })
+    });
+  } catch (error) {
+    console.error('Gap logging failed:', error);
+  }
+}
+
+function fallbackBookingMessage(name, postcode, phone) {
+  return `<strong>⚠️ Almost there, ${name}!</strong>\n\nPlease call us directly to complete your booking:\n\n<div class="price-box">📞 <strong>01920 468674</strong><br>or<br>📱 <strong>07971252440</strong></div>\n\nMention:\n• Name: ${name}\n• Postcode: ${postcode}\n• Phone: ${phone}`;
+}
+
+async function submitContactForm() {
+  const rawName = document.getElementById('form-name')?.value.trim();
+  const rawPostcode = document.getElementById('form-postcode')?.value.trim();
+  const rawPhone = document.getElementById('form-phone')?.value.trim();
+  const rawEmail = document.getElementById('form-email')?.value.trim();
+  const rawMessage = document.getElementById('form-message')?.value.trim();
+
+  if (!rawName || !rawPostcode || !rawPhone) {
+    addMsg("⚠️ Please fill in all required fields (Name, Postcode, Phone)", true);
+    return;
+  }
+
+  const name = escapeHtml(rawName);
+  const postcode = escapeHtml(rawPostcode);
+  const phone = escapeHtml(rawPhone);
+
+  const submitBtn = document.querySelector('.submit-btn');
+  const originalText = submitBtn.innerHTML;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+  submitBtn.disabled = true;
+
+  const result = await sendToWeb3Forms({
+    subject: `New Flamey enquiry from ${rawName}`,
+    from_name: rawName,
+    name: rawName,
+    phone: rawPhone,
+    postcode: rawPostcode,
+    email: rawEmail || 'Not provided',
+    message: rawMessage || 'No message provided',
+    page: location.href,
+    timestamp: new Date().toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short' })
+  });
+
+  if (result.success) {
+    addMsg(`<strong>✅ Thank you, ${name}!</strong>\n\nYour request has been sent to our team. We'll contact you shortly at ${phone}.\n\n<div class="info-box">📞 Need to speak to us sooner? Call <strong>01920 468674</strong></div>`, true);
+  } else {
+    addMsg(fallbackBookingMessage(name, postcode, phone), true);
+  }
+
+  if (submitBtn) {
+    submitBtn.innerHTML = originalText;
+    submitBtn.disabled = false;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// MESSAGE HANDLING + PERSISTENCE
+// Conversation is kept in localStorage so refreshing the page (or a customer
+// coming back later the same day) doesn't wipe out the chat they already had.
+// ════════════════════════════════════════════════════════════════════════════════
+const HISTORY_KEY = 'flamey_chat_history_v2';
+const HISTORY_LIMIT = 40;
+
+function renderMsg(html, fromBot) {
+  const messagesDiv = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = fromBot ? 'bot msg' : 'user msg';
+
+  if (fromBot) {
+    div.innerHTML = `
+      <div class="avatar" style="width:42px;height:42px;" aria-hidden="true">${flamey}</div>
+      <div class="bot-bubble">${html}</div>
+    `;
+  } else {
+    div.innerHTML = `<div class="user">${html}</div>`;
+  }
+
+  messagesDiv.appendChild(div);
+  div.scrollIntoView({behavior: 'smooth', block: 'end'});
+  return div;
+}
+
+function saveHistory(history) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-HISTORY_LIMIT)));
+  } catch (error) {
+    console.error('Could not save chat history:', error);
+  }
+}
+
+function loadHistory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || 'null');
+    return Array.isArray(saved) ? saved : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+let chatHistory = [];
+
+function addMsg(text, fromBot = true) {
+  const html = fromBot ? text : escapeHtml(text).replace(/\n/g, '<br>');
+  renderMsg(html, fromBot);
+  chatHistory.push({ html, fromBot });
+  saveHistory(chatHistory);
+}
+
+function showTypingIndicator() {
+  const messagesDiv = document.getElementById('messages');
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'bot';
+  typingDiv.id = 'typing-indicator';
+  typingDiv.innerHTML = `
+    <div class="avatar" style="width:42px;height:42px;" aria-hidden="true">${flamey}</div>
+    <div class="bot-bubble">
+      <div class="typing-indicator">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  `;
+  messagesDiv.appendChild(typingDiv);
+  typingDiv.scrollIntoView({behavior: 'smooth', block: 'end'});
+}
+
+function removeTypingIndicator() {
+  const indicator = document.getElementById('typing-indicator');
+  if (indicator) indicator.remove();
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// USER INPUT HANDLING
+// ════════════════════════════════════════════════════════════════════════════════
+async function send() {
+  const input = document.getElementById('user-input');
+  const rawText = input.value.trim();
+  if (!rawText) return;
+
+  addMsg(rawText, false);
+  input.value = '';
+
+  const sendBtn = document.getElementById('send-btn');
+  sendBtn.disabled = true;
+  input.disabled = true;
+
+  showTypingIndicator();
+
+  await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 800));
+
+  const intent = resolveFollowup(rawText) || analyzeIntent(rawText);
+  const response = generateResponse(intent, rawText);
+
+  removeTypingIndicator();
+  addMsg(response, true);
+
+  if (intent.intent !== 'followup_booking') {
+    conversationContext.lastIntent = intent.intent;
+  }
+  if (intent.intent === 'general_help') {
+    logUnanswered(rawText);
+  }
+
+  sendBtn.disabled = false;
+  input.disabled = false;
+  input.focus();
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// QUICK BUTTONS
+// ════════════════════════════════════════════════════════════════════════════════
+function quick(type) {
+  const questions = {
+    'prices': 'What are your prices?',
+    'boiler-service': 'How much is a boiler service?',
+    'installation': 'Tell me about boiler installation',
+    'areas': 'What areas do you cover?',
+    'water-softener': 'Tell me about water softeners',
+    'lpg': 'Tell me about LPG',
+    'services': 'What services do you offer?',
+    'repairs': 'I need a boiler repair'
+  };
+
+  document.getElementById('user-input').value = questions[type] || '';
+  send();
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// CHAT UI - ALWAYS VISIBLE
+// ════════════════════════════════════════════════════════════════════════════════
+
+window.addEventListener('DOMContentLoaded', function() {
+  const saved = loadHistory();
+  if (saved.length) {
+    chatHistory = saved;
+    saved.forEach(item => renderMsg(item.html, item.fromBot));
+    conversationContext.greetedOnce = true;
+  } else {
+    setTimeout(() => {
+      addMsg(generateResponse({ intent: 'greeting' }, ''), true);
+    }, 500);
+  }
+});
+
+document.getElementById('user-input').onkeypress = (e) => {
+  if (e.key === 'Enter') send();
+};
+document.getElementById('send-btn').onclick = send;
+
+console.log('🔥 Flamey chatbot initialized');
+</script>
+
+</body>
+</html>
