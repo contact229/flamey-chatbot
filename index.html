@@ -177,6 +177,11 @@
     /* Booking form */
     .contact-form { background: #faf7fc; padding: 12px; border-radius: 12px; margin-top: 6px; }
     .form-intro { font-size: 0.9rem; margin: 6px 0 12px; }
+    .field-hint { font-size: 0.78rem; color: #6b6178; margin: 4px 0 0; }
+    .tick-label { display: flex !important; align-items: center; gap: 8px; font-weight: 400 !important; color: #2a2235 !important; margin-top: 6px; }
+    .tick-label input { width: 18px !important; height: 18px; margin: 0; }
+    .form-group input:disabled { background: #f1eef4; }
+    .boiler-group[hidden] { display: none; }
     .form-note { font-size: 0.78rem; color: #6b6178; margin: 10px 0 0; text-align: center; }
     .form-group { margin-bottom: 10px; }
     .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--deep-purple); margin-bottom: 4px; }
@@ -853,6 +858,13 @@ const BOOKING_TYPE_TO_JOB = {
   landlord: 'Landlord Certificate', quote: 'quote', aircon: 'aircon', other: 'other'
 };
 
+// Boiler services and repairs ask for the make and model, so the right parts can come on the day
+const BOILER_JOBS = ['Boiler Service', 'Boiler Repair'];
+function toggleBoilerField(select) {
+  const group = select.closest('.contact-form').querySelector('.boiler-group');
+  if (group) group.hidden = !BOILER_JOBS.includes(select.value);
+}
+
 function showContactForm(bookingType) {
   const preselect = BOOKING_TYPE_TO_JOB[bookingType] || '';
   const jobOptions = BOOKING_JOBS.map(j =>
@@ -868,10 +880,17 @@ function showContactForm(bookingType) {
 
     <div class="form-group">
       <label for="form-job">What do you need? *</label>
-      <select id="form-job">
+      <select id="form-job" onchange="toggleBoilerField(this)">
         <option value=""${preselect ? '' : ' selected'}>Choose one…</option>
         ${jobOptions}
       </select>
+    </div>
+
+    <div class="form-group boiler-group"${BOILER_JOBS.includes(preselect) ? '' : ' hidden'}>
+      <label for="form-boiler">Boiler make and model *</label>
+      <input type="text" id="form-boiler" placeholder="e.g. Worcester Greenstar 30i" autocomplete="off" />
+      <p class="field-hint">It's usually on the front of the boiler or on a label underneath.</p>
+      <label class="tick-label"><input type="checkbox" id="form-boiler-unsure" onchange="this.closest('.boiler-group').querySelector('#form-boiler').disabled = this.checked"> I'm not sure</label>
     </div>
 
     <div class="form-group">
@@ -1136,6 +1155,7 @@ async function finishEnquiry(enquiry, slot, chatNote) {
   const phone = escapeHtml(enquiry.phone);
   const slotText = slot ? friendlySlot(slot) : '';
   const notes = [
+    enquiry.boiler ? `Boiler: ${enquiry.boiler}.` : '',
     enquiry.message ? `From Flamey: ${enquiry.message}` : 'From Flamey (no message left)',
     slot ? `Agreed in the chat: ${slotText}.` : '',
     chatNote || ''
@@ -1149,6 +1169,7 @@ async function finishEnquiry(enquiry, slot, chatNote) {
       from_name: enquiry.name,
       name: enquiry.name,
       job: jobLabel(enquiry.job),
+      boiler: enquiry.boiler || 'Not asked',
       requested_slot: slot ? `${slotText} (customer agreed; confirm it in the scheduler's Flamey leads card)` : 'None',
       phone: enquiry.phone,
       address: enquiry.address || 'Not provided',
@@ -1210,9 +1231,17 @@ async function submitContactForm(button) {
     email: field('form-email'),
     message: field('form-message')
   };
+  if (BOILER_JOBS.includes(enquiry.job)) {
+    const unsure = form.querySelector('#form-boiler-unsure')?.checked;
+    enquiry.boiler = unsure ? 'Not sure' : field('form-boiler');
+  }
 
   if (!enquiry.job || !enquiry.name || !enquiry.postcode || !enquiry.phone) {
     addMsg("⚠️ Please fill in all required fields (what you need, name, postcode and phone)", true);
+    return;
+  }
+  if (BOILER_JOBS.includes(enquiry.job) && !enquiry.boiler) {
+    addMsg("⚠️ Please add your boiler's make and model, or tick \"I'm not sure\".", true);
     return;
   }
 
