@@ -942,7 +942,7 @@ function showContactForm() {
       <textarea id="form-message" rows="3" placeholder="Tell us what you need..."></textarea>
     </div>
 
-    <button class="submit-btn" onclick="submitContactForm()">
+    <button class="submit-btn" onclick="submitContactForm(this)">
       <i class="fas fa-paper-plane" aria-hidden="true"></i> Send Request
     </button>
 
@@ -1048,14 +1048,20 @@ async function sendToScheduler(lead) {
   }
 }
 
-async function submitContactForm() {
-  const rawName = document.getElementById('form-name')?.value.trim();
-  const rawAddress = document.getElementById('form-address')?.value.trim();
-  const rawTown = document.getElementById('form-town')?.value.trim();
-  const rawPostcode = document.getElementById('form-postcode')?.value.trim();
-  const rawPhone = document.getElementById('form-phone')?.value.trim();
-  const rawEmail = document.getElementById('form-email')?.value.trim();
-  const rawMessage = document.getElementById('form-message')?.value.trim();
+async function submitContactForm(button) {
+  // Read the form whose Send button was pressed. Saved chat history can hold
+  // earlier copies of this form with the same field IDs, so a page-wide
+  // getElementById would pick up an old, empty form instead.
+  const form = (button && button.closest('.contact-form')) ||
+    [...document.querySelectorAll('.contact-form')].pop() || document;
+  const field = (id) => form.querySelector('#' + id)?.value.trim();
+  const rawName = field('form-name');
+  const rawAddress = field('form-address');
+  const rawTown = field('form-town');
+  const rawPostcode = field('form-postcode');
+  const rawPhone = field('form-phone');
+  const rawEmail = field('form-email');
+  const rawMessage = field('form-message');
 
   if (!rawName || !rawPostcode || !rawPhone) {
     addMsg("⚠️ Please fill in all required fields (Name, Postcode, Phone)", true);
@@ -1066,7 +1072,7 @@ async function submitContactForm() {
   const postcode = escapeHtml(rawPostcode);
   const phone = escapeHtml(rawPhone);
 
-  const submitBtn = document.querySelector('.submit-btn');
+  const submitBtn = button || form.querySelector('.submit-btn');
   const originalText = submitBtn.innerHTML;
   submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
   submitBtn.disabled = true;
