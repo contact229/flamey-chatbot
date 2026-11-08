@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Google reviews – Wrights Heating & Gas Services</title>
+<meta name="description" content="Google reviews for Wrights Heating & Gas Services Ltd, Ware, Hertfordshire." />
+<style>
+  :root {
+    --pink: #c2177a;
+    --purple: #5a2d82;
+    --ink: #1f1530;
+    --muted: #5c5068;
+    --line: #eadff2;
+    --tint: #fbf3fa;
+    --star: #e6a100;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink); line-height: 1.5; padding: 4px;
+  }
+  .wrap { height: 100%; max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+
+  .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; }
+  h2 { margin: 0; font-size: 1.5rem; color: var(--purple); letter-spacing: -0.01em; }
+  .summary { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; color: var(--muted); }
+  .summary strong { font-size: 1.3rem; color: var(--ink); }
+  .stars { color: var(--star); letter-spacing: 1px; white-space: nowrap; }
+  .stars .off { color: #d9d2df; }
+
+  .rail-wrap { position: relative; flex: 1; min-height: 0; }
+  .rail {
+    height: 100%; display: flex; gap: 14px;
+    overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .rail::-webkit-scrollbar { display: none; }
+  .card {
+    flex: 0 0 320px; scroll-snap-align: start;
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px; display: flex; flex-direction: column; gap: 8px;
+    min-height: 0; overflow: hidden;
+  }
+  .who { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; flex: 0 0 36px; object-fit: cover;
+    background: var(--tint); color: var(--purple); font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .name { font-weight: 600; font-size: 0.95rem; line-height: 1.25; }
+  .name a { color: inherit; text-decoration: none; }
+  .when { font-size: 0.8rem; color: var(--muted); }
+  .rtext { margin: 0; font-size: 0.92rem; flex: 1; min-height: 0; overflow: hidden; position: relative; white-space: pre-line; }
+  .rtext.cut::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2.4em;
+    background: linear-gradient(rgba(255,255,255,0), #fff);
+  }
+  .more { font-size: 0.85rem; font-weight: 600; color: var(--purple); }
+  .more[hidden] { display: none; }
+
+  .arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
+    background: #fff; color: var(--purple); font-size: 1.3rem; cursor: pointer;
+    box-shadow: 0 1px 4px rgba(31, 21, 48, 0.12);
+  }
+  .arrow.prev { left: -6px; } .arrow.next { right: -6px; }
+  .arrow:disabled { opacity: 0; pointer-events: none; }
+
+  .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .btn {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px;
+    border-radius: 10px; font-weight: 600; font-size: 0.92rem; text-decoration: none;
+  }
+  .btn.solid { background: var(--purple); color: #fff; }
+  .btn.solid:hover { background: #43206a; }
+  .btn.line { border: 2px solid var(--purple); color: var(--purple); }
+  .btn:focus-visible, .arrow:focus-visible, .more:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+  .credit { margin-left: auto; font-size: 0.78rem; color: var(--muted); }
+  .status { color: var(--muted); font-size: 0.95rem; }
+  .hint { display: none; font-size: 0.8rem; color: var(--muted); }
+
+  /* Phones: one review per screen, swipe between them; the box never scrolls up and down */
+  @media (max-width: 700px) {
+    body { padding: 2px; line-height: 1.45; }
+    .wrap { gap: 8px; }
+    h2 { font-size: 1.2rem; }
+    .summary { font-size: 0.85rem; }
+    .summary strong { font-size: 1.1rem; }
+    .card { flex: 0 0 86%; padding: 14px; }
+    .rtext { font-size: 0.88rem; }
+    .arrow { display: none; }
+    .hint { display: inline; }
+    .credit { margin-left: 0; width: 100%; }
+    .btn { min-height: 44px; padding: 0 12px; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h2>What our customers say</h2>
+    <div class="summary" id="summary"></div>
+  </div>
+  <div class="rail-wrap">
+    <div class="rail" id="rail" aria-label="Google reviews" tabindex="0">
+      <p class="status">Loading reviews…</p>
+    </div>
+    <button class="arrow prev" id="prev" aria-label="Previous reviews" disabled>&lsaquo;</button>
+    <button class="arrow next" id="next" aria-label="More reviews" disabled>&rsaquo;</button>
+  </div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+  const PLACE_ID = 'ChIJCRaDx4GKekgRp_fiRwOmC3I';
+  const ALL_REVIEWS = 'https://www.google.com/maps/place/?q=place_id:' + PLACE_ID;
+  const LEAVE_REVIEW = 'https://g.page/r/Caf34kcDpgtyEAE/review';
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function safeUrl(u) { return /^https:\/\//i.test(String(u || '')) ? String(u) : ''; }
+  function stars(n) {
+    const full = Math.round(n || 0);
+    return '<span class="stars" aria-label="' + full + ' out of 5 stars">' +
+      '★'.repeat(full) + '<span class="off">' + '★'.repeat(5 - full) + '</span></span>';
+  }
+
+  function renderFoot(mapsUri) {
+    // Links open a new window: Google Sites embeds can't navigate the whole page
+    document.getElementById('foot').innerHTML =
+      '<a class="btn solid" href="' + esc(safeUrl(mapsUri) || ALL_REVIEWS) + '" target="_blank" rel="noopener">Read all reviews</a>' +
+      '<a class="btn line" href="' + esc(LEAVE_REVIEW) + '" target="_blank" rel="noopener">Leave a review</a>' +
+      '<span class="hint">Swipe for more &rarr;</span>' +
+      '<span class="credit">Reviews from Google</span>';
+  }
+
+  function render(data) {
+    const rail = document.getElementById('rail');
+    if (data.rating) {
+      document.getElementById('summary').innerHTML =
+        '<strong>' + esc(Number(data.rating).toFixed(1)) + '</strong>' + stars(data.rating) +
+        '<span>' + esc(data.count) + ' Google reviews</span>';
+    }
+    renderFoot(data.mapsUri);
+    if (!data.reviews || !data.reviews.length) {
+      rail.innerHTML = '<p class="status">See what our customers say on Google.</p>';
+      return;
+    }
+    rail.innerHTML = data.reviews.map(r => {
+      const initial = esc((r.author || '?').trim().charAt(0).toUpperCase());
+      const photo = safeUrl(r.photo)
+        ? '<img class="avatar" src="' + esc(r.photo) + '" alt="" referrerpolicy="no-referrer" loading="lazy">'
+        : '<span class="avatar" aria-hidden="true">' + initial + '</span>';
+      const name = safeUrl(r.authorUri)
+        ? '<a href="' + esc(r.authorUri) + '" target="_blank" rel="noopener">' + esc(r.author) + '</a>'
+        : esc(r.author);
+      const link = safeUrl(r.reviewUri) || safeUrl(data.mapsUri) || ALL_REVIEWS;
+      return '<article class="card">' +
+        '<div class="who">' + photo + '<div><div class="name">' + name + '</div>' +
+        '<div class="when">' + stars(r.rating) + ' &middot; ' + esc(r.when) + '</div></div></div>' +
+        '<p class="rtext">' + esc(r.text) + '</p>' +
+        '<a class="more" href="' + esc(link) + '" target="_blank" rel="noopener" hidden>Read on Google</a>' +
+        '</article>';
+    }).join('');
+    markCutText();
+    updateArrows();
+  }
+
+  // Reviews longer than the card show a fade and a "Read on Google" link
+  function markCutText() {
+    document.querySelectorAll('.card').forEach(card => {
+      const t = card.querySelector('.rtext');
+      const cut = t.scrollHeight > t.clientHeight + 2;
+      t.classList.toggle('cut', cut);
+      card.querySelector('.more').hidden = !cut;
+    });
+  }
+
+  const rail = document.getElementById('rail');
+  const prev = document.getElementById('prev');
+  const next = document.getElementById('next');
+  function updateArrows() {
+    prev.disabled = rail.scrollLeft < 4;
+    next.disabled = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4;
+  }
+  prev.addEventListener('click', () => rail.scrollBy({ left: -rail.clientWidth * 0.9 }));
+  next.addEventListener('click', () => rail.scrollBy({ left: rail.clientWidth * 0.9 }));
+  rail.addEventListener('scroll', updateArrows, { passive: true });
+  window.addEventListener('resize', () => { markCutText(); updateArrows(); });
+
+  fetch('/api/reviews')
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.ok) render(data);
+      else { renderFoot(null); rail.innerHTML = '<p class="status">See what our customers say on Google.</p>'; }
+    })
+    .catch(() => { renderFoot(null); rail.innerHTML = '<p class="status">See what our customers say on Google.</p>'; });
+</script>
+</body>
+</html>
