@@ -386,7 +386,6 @@ const knowledgeBase = {
     boilerReplacement: "from £1,600 + VAT",
     centralHeating: "from £3,400 + VAT",
     smartThermostat: "from £125 + VAT, plus parts",
-    gasSafetyCheck: "£80 + VAT",
     landlordCertificate: "£120 + VAT",
     cookerInstall: "from £150 + VAT, plus parts",
     hobInstall: "from £100 + VAT, plus parts",
@@ -689,7 +688,7 @@ function generateResponse(intent, userMessage) {
         generateActionButtons(['book_repair', 'call_now']);
 
     case 'aircon':
-      return `<strong>❄️ Air conditioning: coming in ${KB.airCon.start}</strong>\n\nFrom ${KB.airCon.start}, ${KB.company.name} will be installing and servicing air conditioning across ${KB.coverage.summary}.\n\n<strong>Systems we'll fit:</strong>\n${bullets(KB.airCon.systems)}\n\n${KB.airCon.extras}\n\n<div class="info-box">Bookings open in ${KB.airCon.start}. Register your interest now and we'll contact you as soon as we're taking installs, ahead of the summer rush. Prices are quoted after a home survey.</div>` +
+      return `<strong>❄️ Air conditioning: coming in ${KB.airCon.start}</strong>\n\nFrom ${KB.airCon.start}, ${KB.company.name} will be installing and servicing air conditioning across ${KB.coverage.summary}.\n\n<strong>Systems we'll fit:</strong>\n${bullets(KB.airCon.systems)}\n\n${KB.airCon.extras}\n\n<div class="info-box">Bookings open in ${KB.airCon.start}. Register your interest now and we'll contact you as soon as we're taking installs, ahead of the summer rush. Prices are quoted after a free home survey.</div>` +
         generateActionButtons(['book_aircon', 'call_now']);
 
     case 'price_boiler_service':
@@ -715,7 +714,7 @@ function generateResponse(intent, userMessage) {
         generateActionButtons(['book_repair', 'call_now']);
 
     case 'price_landlord_cert':
-      return `<strong>💰 Gas safety certificates</strong>\n\n• Landlord gas safety certificate: <strong>${KB.prices.landlordCertificate}</strong>\n• Gas safety check: <strong>${KB.prices.gasSafetyCheck}</strong>\n• Commercial gas tightness certificate: <strong>${KB.prices.gasTightness}</strong>\n\n<div class="info-box">⚖️ ${KB.gasSafety.landlordDuty}</div>\nWe can do your certificate on the same visit as your boiler service.` +
+      return `<strong>💰 Landlord and gas certificates</strong>\n\n• Landlord gas safety certificate: <strong>${KB.prices.landlordCertificate}</strong>\n• Commercial gas tightness certificate: <strong>${KB.prices.gasTightness}</strong>\n\n<div class="info-box">⚖️ ${KB.gasSafety.landlordDuty}</div>\nWe can do your certificate on the same visit as your boiler service.` +
         generateActionButtons(['book_landlord', 'call_now']);
 
     case 'price_plumbing':
@@ -799,7 +798,7 @@ function generateResponse(intent, userMessage) {
     case 'followup_booking': {
       const typeLabel = {
         service: 'your boiler service', quote: 'your quote', repair: 'your repair',
-        certificate: 'your gas safety check', landlord: 'your landlord certificate',
+        certificate: 'your landlord certificate', landlord: 'your landlord certificate',
         aircon: 'your air conditioning interest', other: 'that'
       }[intent.bookingType] || 'that';
       return `<strong>Great, let's get ${typeLabel} sorted! 👍</strong>\n\nJust pop your details below:` + showContactForm(intent.bookingType);
@@ -843,7 +842,6 @@ function generateActionButtons(actions) {
 const BOOKING_JOBS = [
   { value: 'Boiler Service', label: 'Boiler service' },
   { value: 'Boiler Repair', label: 'Boiler repair or breakdown' },
-  { value: 'Gas Safety Certificate', label: 'Gas safety check (homeowner)' },
   { value: 'Landlord Certificate', label: 'Landlord gas safety certificate' },
   { value: 'General Callout', label: 'Other gas, heating or plumbing problem' },
   { value: 'quote', label: 'Quote for a new boiler or other work' },
@@ -851,7 +849,7 @@ const BOOKING_JOBS = [
   { value: 'other', label: 'Something else' }
 ];
 const BOOKING_TYPE_TO_JOB = {
-  service: 'Boiler Service', repair: 'Boiler Repair', certificate: 'Gas Safety Certificate',
+  service: 'Boiler Service', repair: 'Boiler Repair', certificate: 'Landlord Certificate',
   landlord: 'Landlord Certificate', quote: 'quote', aircon: 'aircon', other: 'other'
 };
 
@@ -864,7 +862,7 @@ function showContactForm(bookingType) {
     ? `<strong>❄️ Register your interest</strong>
     <p class="form-intro">Leave your details and we'll be in touch when we start fitting air conditioning in 2027.</p>`
     : `<strong>📅 Let's get you booked in</strong>
-    <p class="form-intro">Fill in your details. For services, repairs and gas safety checks I'll suggest a day that suits our diary.</p>`;
+    <p class="form-intro">Fill in your details. For services, repairs and landlord certificates I'll suggest a day that suits our diary.</p>`;
   return `<div class="contact-form">
     ${intro}
 
@@ -926,7 +924,7 @@ function showBookingForm(type) {
     service: 'book a boiler service',
     quote: 'get a quote',
     repair: 'book a repair',
-    certificate: 'book a gas safety check',
+    certificate: 'book a landlord gas safety certificate',
     landlord: 'book a landlord gas safety certificate',
     aircon: 'register my interest in air conditioning',
     other: 'book a visit'
