@@ -57,6 +57,43 @@
   .cta small { color: var(--muted); font-size: 0.8rem; }
   .status { color: var(--muted); font-size: 0.95rem; }
   .skeleton article { min-height: 190px; }
+  .swipe-hint { display: none; }
+
+  /* Phones: the embed box on the website has a fixed height, so instead of
+     stacking the posts (which made the box scroll inside itself) they sit side
+     by side and you swipe between them. Up and down scrolling moves the page. */
+  @media (max-width: 700px) {
+    html, body { height: 100%; overflow-y: hidden; }
+    body { padding: 2px; line-height: 1.45; }
+    .wrap { height: 100%; display: flex; flex-direction: column; }
+    .head { margin: 0 0 8px; }
+    h2 { font-size: 1.25rem; }
+    .sub { display: none; }
+    .swipe-hint { display: inline; margin: 0; font-size: 0.8rem; color: var(--muted); }
+    .grid {
+      flex: 1; min-height: 0;
+      display: flex; gap: 12px;
+      overflow-x: auto; overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .grid::-webkit-scrollbar { display: none; }
+    article {
+      flex: 0 0 86%; scroll-snap-align: start;
+      padding: 14px 14px 12px; gap: 8px;
+      min-height: 0; overflow: hidden;
+    }
+    h3 { font-size: 1.05rem; }
+    p.body { font-size: 0.9rem; min-height: 0; overflow: hidden; }
+    .cta a { min-height: 44px; font-size: 0.9rem; }
+    /* Very small boxes: tighter text so a post never gets cut short */
+    body.tight h3 { font-size: 0.98rem; }
+    body.tight p.body { font-size: 0.82rem; line-height: 1.38; }
+    body.tight .cta small { display: none; }
+    body.tight article { padding: 12px 12px 10px; gap: 6px; }
+  }
 </style>
 </head>
 <body>
@@ -64,6 +101,7 @@
   <div class="head">
     <h2>News and offers</h2>
     <p class="sub">From Wrights Heating &amp; Gas Services Ltd</p>
+    <p class="swipe-hint" aria-hidden="true">Swipe for more &rarr;</p>
   </div>
   <div id="posts" class="grid" aria-live="polite">
     <p class="status">Loading the latest news…</p>
@@ -109,6 +147,15 @@
     }).join('');
   }
 
+  // On phones, if any post's text doesn't fit the box height, tighten the text.
+  function fitToBox() {
+    document.body.classList.remove('tight');
+    if (window.innerWidth > 700) return;
+    const clipped = [...document.querySelectorAll('p.body')].some(p => p.scrollHeight > p.clientHeight + 1);
+    if (clipped) document.body.classList.add('tight');
+  }
+  window.addEventListener('resize', fitToBox);
+
   fetch('news.json', { cache: 'no-cache' })
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => {
@@ -117,6 +164,7 @@
         .sort((a, b) => String(b.date).localeCompare(String(a.date)))
         .slice(0, MAX_POSTS);
       render(posts);
+      fitToBox();
     })
     .catch(() => {
       document.getElementById('posts').innerHTML =
