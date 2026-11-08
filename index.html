@@ -538,8 +538,8 @@ const knowledgeBase = {
 
   pricing: {
     boilerService: {
-      typical: "£100-£120",
-      detailed: "UK average is £80-£120. Our prices are competitive and we provide transparent quotes.",
+      typical: "£120 inc VAT",
+      detailed: "A domestic boiler service is £120 including VAT (£100 + VAT). Commercial and LPG boilers are priced individually; just ask.",
       includes: [
         "Visual inspection of boiler and components",
         "Safety checks including gas pressure and carbon monoxide",
@@ -548,6 +548,11 @@ const knowledgeBase = {
         "Gas Safe certification"
       ],
       note: "Annual service recommended to maintain warranty and safety"
+    },
+    repairs: {
+      callOut: "£96 inc VAT (£80 + VAT), including the first hour",
+      hourly: "£66 inc VAT (£55 + VAT) per hour after the first",
+      note: "Parts are extra, and we always tell you the cost before fitting them."
     },
     landlordCertificate: {
       service: "Gas Safety Certificates",
@@ -831,7 +836,7 @@ function generateResponse(intent, userMessage) {
       generateActionButtons(['book_repair', 'call_now']);
 
     case 'price_boiler_service':
-      return `<strong>💰 Boiler Service Pricing</strong>\n\n<div class="price-box">Typical Cost<span class="price">${knowledgeBase.pricing.boilerService.typical}</span>UK average price range</div>\n\n<strong>What's Included:</strong>\n${knowledgeBase.pricing.boilerService.includes.map(item => `✓ ${item}`).join('\n')}\n\n<div class="info-box">💡 <strong>Good to know:</strong> Annual servicing is recommended to maintain your warranty and ensure safe operation. We provide Gas Safe certification with every service.</div>\n\n<strong>Would you like to:</strong>` +
+      return `<strong>💰 Boiler Service Pricing</strong>\n\n<div class="price-box">Domestic boiler service<span class="price">${knowledgeBase.pricing.boilerService.typical}</span>£100 + VAT</div>\n\n<strong>What's Included:</strong>\n${knowledgeBase.pricing.boilerService.includes.map(item => `✓ ${item}`).join('\n')}\n\n<div class="info-box">💡 <strong>Good to know:</strong> Annual servicing is recommended to maintain your warranty and ensure safe operation. We provide Gas Safe certification with every service.</div>\n\n<strong>Would you like to:</strong>` +
       generateActionButtons(['book_service', 'more_services']);
 
     case 'price_installation':
@@ -847,7 +852,7 @@ function generateResponse(intent, userMessage) {
       generateActionButtons(['book_cert', 'call_now']);
 
     case 'pricing_general':
-      return `<strong>💰 Our Pricing</strong>\n\nWe believe in transparent, competitive pricing. Every job is different, so costs vary based on your specific needs.\n\n<strong>Quick price guide:</strong>\n• Boiler Service: ${knowledgeBase.pricing.boilerService.typical}\n• New Boiler Installation: Free quote required\n• Repairs: Depends on issue & parts\n• Landlord Certificates: Competitive rates\n\n<strong>What makes us great value:</strong>\n✓ ${knowledgeBase.company.experience} experience\n✓ No hidden fees\n✓ Quality workmanship guaranteed\n✓ ${knowledgeBase.company.rating}\n\n<strong>What service are you interested in?</strong>` +
+      return `<strong>💰 Our Pricing</strong>\n\nWe believe in transparent, competitive pricing. Every job is different, so costs vary based on your specific needs.\n\n<strong>Quick price guide:</strong>\n• Boiler Service: ${knowledgeBase.pricing.boilerService.typical}\n• New Boiler Installation: Free quote required\n• Repairs: call-out ${knowledgeBase.pricing.repairs.callOut}, then ${knowledgeBase.pricing.repairs.hourly}. ${knowledgeBase.pricing.repairs.note}\n• Landlord Certificates: Competitive rates\n\n<strong>What makes us great value:</strong>\n✓ ${knowledgeBase.company.experience} experience\n✓ No hidden fees\n✓ Quality workmanship guaranteed\n✓ ${knowledgeBase.company.rating}\n\n<strong>What service are you interested in?</strong>` +
       generateActionButtons(['boiler_service', 'installation', 'repairs', 'get_quote']);
 
     case 'boiler_service_info':
