@@ -98,7 +98,7 @@
     box.innerHTML = posts.map((p, i) => {
       const href = p.cta && safeHref(p.cta.href);
       const cta = href
-        ? `<div class="cta"><a href="${esc(href)}" target="_top">${esc(p.cta.label)}</a>${p.cta.note ? `<small>${esc(p.cta.note)}</small>` : ''}</div>`
+        ? `<div class="cta"><a href="${esc(href)}" target="_blank" rel="noopener">${esc(p.cta.label)}</a>${p.cta.note ? `<small>${esc(p.cta.note)}</small>` : ''}</div>`
         : '';
       return `<article class="${i === 0 ? 'featured' : ''}">
         <div class="meta">${p.tag ? `<span class="tag">${esc(p.tag)}</span>` : ''}<time datetime="${esc(p.date)}">${esc(formatDate(p.date))}</time></div>
