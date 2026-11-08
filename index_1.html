@@ -913,8 +913,18 @@ function showContactForm() {
     </div>
 
     <div class="form-group">
+      <label for="form-address">House number and street</label>
+      <input type="text" id="form-address" placeholder="12 High Street" autocomplete="address-line1" />
+    </div>
+
+    <div class="form-group">
+      <label for="form-town">Town</label>
+      <input type="text" id="form-town" placeholder="Ware" autocomplete="address-level2" />
+    </div>
+
+    <div class="form-group">
       <label for="form-postcode">Postcode *</label>
-      <input type="text" id="form-postcode" placeholder="SG12 9AB" />
+      <input type="text" id="form-postcode" placeholder="SG12 9AB" autocomplete="postal-code" />
     </div>
 
     <div class="form-group">
@@ -1021,8 +1031,27 @@ function fallbackBookingMessage(name, postcode, phone) {
   return `<strong>⚠️ Almost there, ${name}!</strong>\n\nPlease call us directly to complete your booking:\n\n<div class="price-box">📞 <strong>01920 468674</strong><br>or<br>📱 <strong>07971252440</strong></div>\n\nMention:\n• Name: ${name}\n• Postcode: ${postcode}\n• Phone: ${phone}`;
 }
 
+// Sends the enquiry to the Wrights scheduler via this project's /api/lead
+// function, which holds the scheduler's key server-side. It lands as a pending
+// lead on the scheduler's admin screen; nothing is booked automatically.
+async function sendToScheduler(lead) {
+  try {
+    const res = await fetch('/api/lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lead)
+    });
+    return { success: res.ok };
+  } catch (error) {
+    console.error('Scheduler lead error:', error);
+    return { success: false };
+  }
+}
+
 async function submitContactForm() {
   const rawName = document.getElementById('form-name')?.value.trim();
+  const rawAddress = document.getElementById('form-address')?.value.trim();
+  const rawTown = document.getElementById('form-town')?.value.trim();
   const rawPostcode = document.getElementById('form-postcode')?.value.trim();
   const rawPhone = document.getElementById('form-phone')?.value.trim();
   const rawEmail = document.getElementById('form-email')?.value.trim();
@@ -1042,19 +1071,35 @@ async function submitContactForm() {
   submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
   submitBtn.disabled = true;
 
-  const result = await sendToWeb3Forms({
-    subject: `New Flamey enquiry from ${rawName}`,
-    from_name: rawName,
-    name: rawName,
-    phone: rawPhone,
-    postcode: rawPostcode,
-    email: rawEmail || 'Not provided',
-    message: rawMessage || 'No message provided',
-    page: location.href,
-    timestamp: new Date().toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short' })
-  });
+  // Email and scheduler are sent together; the customer sees success if either
+  // one gets through, so a scheduler outage never loses an enquiry.
+  const [emailResult, schedulerResult] = await Promise.all([
+    sendToWeb3Forms({
+      subject: `New Flamey enquiry from ${rawName}`,
+      from_name: rawName,
+      name: rawName,
+      phone: rawPhone,
+      address: rawAddress || 'Not provided',
+      town: rawTown || 'Not provided',
+      postcode: rawPostcode,
+      email: rawEmail || 'Not provided',
+      message: rawMessage || 'No message provided',
+      page: location.href,
+      timestamp: new Date().toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short' })
+    }),
+    sendToScheduler({
+      customerName: rawName,
+      addressLine1: rawAddress,
+      city: rawTown,
+      postcode: rawPostcode,
+      phone: rawPhone,
+      email: rawEmail,
+      requestedJobTypeText: rawMessage ? rawMessage.slice(0, 200) : 'Website enquiry',
+      notes: rawMessage ? `From Flamey: ${rawMessage}` : 'From Flamey (no message left)'
+    })
+  ]);
 
-  if (result.success) {
+  if (emailResult.success || schedulerResult.success) {
     addMsg(`<strong>✅ Thank you, ${name}!</strong>\n\nYour request has been sent to our team. We'll contact you shortly at ${phone}.\n\n<div class="info-box">📞 Need to speak to us sooner? Call <strong>01920 468674</strong></div>`, true);
   } else {
     addMsg(fallbackBookingMessage(name, postcode, phone), true);
