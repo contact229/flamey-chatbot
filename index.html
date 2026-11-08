@@ -1,418 +1,242 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Flamey – Wrights Heating & Gas Services Assistant</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
+    /* Flamey fills whatever box Google Sites gives it (its iframe), from a
+       small phone up to a desktop column, instead of floating at a fixed size. */
     :root {
       --pink: #e91e93;
       --deep-purple: #5a2d82;
       --light-pink: #ff1493;
+      --ink: #2a2235;
+      --line: #eadff2;
+      --tint: #fff4f9;
     }
-
     * { box-sizing: border-box; }
-
+    html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
     body {
-      margin:0;
-      font-family: system-ui, sans-serif;
-      background:#f8f9fa;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--ink);
+      -webkit-text-size-adjust: 100%;
     }
+
+    #open-btn { display: none; }
 
     #chat-container {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 400px;
-      height: 650px;
-      background: transparent;
-      border-radius: 24px;
-      box-shadow: none;
-      border: none;
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      z-index: 9999;
-      animation: slideUp 0.3s ease-out;
-    }
-
-    #open-btn {
-      display: none;
-    }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+      from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* Header */
     #header {
+      flex: 0 0 auto;
       background: linear-gradient(135deg, var(--pink), var(--light-pink), var(--deep-purple));
-      color: white;
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      position: relative;
+      color: #fff;
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 12px;
     }
+    #header h2 { margin: 0; font-size: 1.2rem; line-height: 1.2; }
+    #header p { margin: 2px 0 0; font-size: 0.85rem; opacity: 0.92; }
+    .avatar { width: 48px; height: 48px; flex: 0 0 auto; }
+    .avatar svg { width: 100%; height: 100%; display: block; }
+    .avatar.small { width: 34px; height: 34px; }
 
-    #header h2 { margin:0; font-size: 1.4rem; position: relative; z-index: 1; }
-    #header p { margin:0; font-size: 0.9rem; opacity: 0.9; position: relative; z-index: 1; }
-
+    /* Messages: the only part that scrolls */
     #messages {
-      flex: 1;
-      padding: 16px;
-      overflow-y: auto;
-      background: transparent;
+      position: relative;
+      flex: 1 1 auto; min-height: 0;
+      overflow-y: auto; overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding: 14px 12px;
     }
-
     #messages::-webkit-scrollbar { width: 6px; }
-    #messages::-webkit-scrollbar-track { background: #f1f1f1; }
-    #messages::-webkit-scrollbar-thumb { background: var(--pink); border-radius: 3px; }
+    #messages::-webkit-scrollbar-thumb { background: #f3b6d8; border-radius: 3px; }
 
-    .msg {
-      margin-bottom: 12px;
-      max-width: 85%;
-      line-height: 1.5;
-      font-size: 15px;
-      animation: fadeIn 0.3s ease-out;
-    }
-
-    .bot {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
+    .msg { margin-bottom: 12px; line-height: 1.5; font-size: 15px; animation: fadeIn 0.25s ease-out; }
+    .bot { display: flex; align-items: flex-start; gap: 8px; max-width: 100%; }
     .bot-bubble {
-      background: linear-gradient(to bottom right, #fffaf5, #ffffff);
+      flex: 1 1 auto; min-width: 0; max-width: 560px;
+      background: #fff;
       border: 2px solid var(--pink);
-      border-radius: 20px;
-      border-top-left-radius: 4px;
-      padding: 14px 18px;
-      color: #333;
+      border-radius: 18px; border-top-left-radius: 4px;
+      padding: 12px 14px;
+      white-space: pre-line;           /* line breaks in Flamey's answers */
+      overflow-wrap: anywhere;
     }
+    .bot-bubble > strong:first-child { display: block; color: var(--deep-purple); font-size: 1.02rem; margin-bottom: 4px; }
+    .bot-bubble strong { color: var(--deep-purple); }
+    .bot-bubble a { color: var(--deep-purple); }
+    .bot-bubble .muted { color: #6b6178; font-weight: 400; font-size: 0.9em; }
+    .bot-bubble .contact-form, .bot-bubble .action-buttons, .bot-bubble .slot-offer,
+    .bot-bubble .price-box, .bot-bubble .info-box { white-space: normal; }
 
-    .bot-bubble strong {
-      color: var(--deep-purple);
-      display: block;
-      margin-bottom: 6px;
-    }
-
-    .bot-bubble ul {
-      margin: 8px 0;
-      padding-left: 20px;
-    }
-
-    .bot-bubble li {
-      margin: 4px 0;
+    .user-row { display: flex; justify-content: flex-end; }
+    .user {
+      max-width: 85%;
+      background: var(--deep-purple); color: #fff;
+      border-radius: 18px; border-top-right-radius: 4px;
+      padding: 10px 14px;
+      overflow-wrap: anywhere;
     }
 
     .price-box {
-      background: linear-gradient(135deg, #fff4f9, #f8f9fa);
+      background: var(--tint);
       border: 2px solid var(--pink);
       border-radius: 12px;
-      padding: 12px 16px;
-      margin: 10px 0;
-      font-weight: 600;
-      color: var(--deep-purple);
+      padding: 10px 14px; margin: 8px 0;
+      font-weight: 600; color: var(--deep-purple);
     }
-
-    .price-box .price {
-      font-size: 1.4rem;
-      color: var(--pink);
-      display: block;
-      margin: 4px 0;
-    }
-
+    .price-box .price { font-size: 1.3rem; color: var(--pink); display: block; margin: 2px 0; }
     .info-box {
-      background: #e8f4f8;
-      border-left: 4px solid #17a2b8;
-      padding: 12px;
-      margin: 10px 0;
-      border-radius: 4px;
-      font-size: 0.9rem;
+      background: #f3eef9;
+      border-left: 4px solid var(--deep-purple);
+      padding: 10px 12px; margin: 8px 0;
+      border-radius: 6px; font-size: 0.92rem;
     }
 
-    .user {
-      margin-left: auto;
-      background: var(--deep-purple);
-      color: white;
-      border-radius: 20px;
-      border-top-right-radius: 4px;
-      padding: 12px 16px;
-      text-align: right;
-    }
-
-    .typing-indicator {
-      display: flex;
-      gap: 4px;
-      padding: 12px 16px;
-    }
-
-    .typing-indicator span {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--pink);
-      animation: typing 1.4s infinite;
-    }
-
+    #typing-indicator .bot-bubble { white-space: normal; padding: 0; }
+    .typing-indicator { display: flex; gap: 4px; padding: 12px 16px; }
+    .typing-indicator span { width: 8px; height: 8px; border-radius: 50%; background: var(--pink); animation: typing 1.4s infinite; }
     .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
     .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-
     @keyframes typing {
       0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-      30% { transform: translateY(-10px); opacity: 1; }
+      30% { transform: translateY(-8px); opacity: 1; }
     }
 
-    #quick {
-      padding: 12px 16px;
-      border-top: 1px solid rgba(238, 238, 238, 0.5);
-      background: transparent;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .quick-btn {
-      font-size: 0.82rem;
-      padding: 8px 16px;
-      border-radius: 999px;
-      background: #ffe4f0;
-      color: var(--pink);
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-weight: 500;
-    }
-
-    .quick-btn:hover {
-      background: var(--pink);
-      color: white;
-      transform: translateY(-2px);
-    }
-
-    #input-area {
-      padding: 16px;
-      border-top: 1px solid rgba(238, 238, 238, 0.5);
-      background: transparent;
-      display: flex;
-      gap: 10px;
-    }
-
-    #user-input {
-      flex: 1;
-      padding: 12px 18px;
-      border: 2px solid #ddd;
-      border-radius: 999px;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    #user-input:focus {
-      border-color: var(--pink);
-      box-shadow: 0 0 0 3px rgba(233,30,147,0.1);
-    }
-
-    #send-btn {
-      width: 52px;
-      height: 52px;
-      background: linear-gradient(135deg, var(--pink), var(--light-pink));
-      color: white;
-      border: none;
-      border-radius: 50%;
-      font-size: 1.3rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    #send-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(233,30,147,0.4);
-    }
-
-    #send-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    #open-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 70px;
-      height: 70px;
-      background: linear-gradient(135deg, var(--pink), var(--light-pink), var(--deep-purple));
-      color: white;
-      border: none;
-      border-radius: 50%;
-      box-shadow: 0 6px 20px rgba(233,30,147,0.4);
-      cursor: pointer;
-      z-index: 9999;
-      animation: pulse 2s infinite;
-      padding: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #btn-flamey {
-      width: 100%;
-      height: 100%;
-      animation: bounce 2s ease-in-out infinite;
-    }
-
-    #btn-flamey svg {
-      width: 100%;
-      height: 100%;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
-    }
-
-    .avatar {
-      width: 52px;
-      height: 52px;
-      flex-shrink: 0;
-    }
-
-    .avatar svg { width: 100%; height: 100%; }
-
-    .action-buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
+    .action-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .action-btn {
-      padding: 8px 16px;
-      border-radius: 20px;
-      border: 2px solid var(--pink);
-      background: white;
-      color: var(--pink);
-      font-weight: 600;
+      min-height: 40px; padding: 6px 14px;
+      border-radius: 999px; border: 2px solid var(--pink);
+      background: #fff; color: #b0126c;
+      font: 600 0.88rem/1.2 inherit; font-family: inherit;
       cursor: pointer;
-      transition: all 0.2s;
-      font-size: 0.85rem;
     }
+    .action-btn:hover { background: var(--pink); color: #fff; }
 
-    .action-btn:hover {
-      background: var(--pink);
-      color: white;
+    /* Quick questions: one row you swipe sideways, so it never eats the chat */
+    #quick {
+      flex: 0 0 auto;
+      display: flex; gap: 8px;
+      overflow-x: auto; overflow-y: hidden;
+      padding: 8px 12px;
+      border-top: 1px solid var(--line);
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      mask-image: linear-gradient(to right, #000 88%, transparent);
+      -webkit-mask-image: linear-gradient(to right, #000 88%, transparent);
     }
-
-    .contact-form {
-      background: #f8f9fa;
-      padding: 16px;
-      border-radius: 12px;
-      margin-top: 8px;
+    #quick::-webkit-scrollbar { display: none; }
+    .quick-btn {
+      flex: 0 0 auto; white-space: nowrap;
+      min-height: 36px; padding: 0 14px;
+      border-radius: 999px; border: none;
+      background: #ffe4f0; color: #b0126c;
+      font: 500 0.85rem inherit; font-family: inherit;
+      cursor: pointer;
     }
+    .quick-btn:last-child { margin-right: 24px; }
+    .quick-btn:hover { background: var(--pink); color: #fff; }
+    .quick-btn i { margin-right: 4px; }
 
-    .form-group {
-      margin-bottom: 12px;
+    /* Typing box */
+    #input-area {
+      flex: 0 0 auto;
+      display: flex; gap: 8px; align-items: center;
+      padding: 8px 12px 12px;
     }
-
-    .form-group label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--deep-purple);
-      margin-bottom: 4px;
+    #user-input {
+      flex: 1; min-width: 0;
+      height: 46px; padding: 0 16px;
+      border: 2px solid #ddd; border-radius: 999px;
+      font-size: 16px;                 /* 16px stops iPhones zooming in */
+      font-family: inherit; outline: none;
     }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      padding: 10px 14px;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-family: inherit;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: var(--pink);
-    }
-
-    .submit-btn {
-      width: 100%;
-      padding: 12px;
+    #user-input:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(233,30,147,0.12); }
+    #send-btn {
+      flex: 0 0 46px; width: 46px; height: 46px;
       background: linear-gradient(135deg, var(--pink), var(--light-pink));
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
+      color: #fff; border: none; border-radius: 50%;
+      font-size: 1.1rem; cursor: pointer;
+    }
+    #send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Booking form */
+    .contact-form { background: #faf7fc; padding: 12px; border-radius: 12px; margin-top: 6px; }
+    .form-intro { font-size: 0.9rem; margin: 6px 0 12px; }
+    .form-note { font-size: 0.78rem; color: #6b6178; margin: 10px 0 0; text-align: center; }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--deep-purple); margin-bottom: 4px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 12px;
+      border: 2px solid #ddd; border-radius: 8px;
+      font-size: 16px; font-family: inherit; background: #fff;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--pink); }
+    .submit-btn {
+      width: 100%; min-height: 46px;
+      background: linear-gradient(135deg, var(--pink), var(--light-pink));
+      color: #fff; border: none; border-radius: 8px;
+      font-size: 1rem; font-weight: 600; font-family: inherit; cursor: pointer;
     }
 
-    .form-group select { background: #fff; }
-
-    .slot-offer {
-      margin-top: 10px;
-      padding: 12px 14px;
-      border: 2px solid var(--pink);
-      border-radius: 10px;
-      background: #fff4f9;
-      font-size: 0.95rem;
-    }
+    .slot-offer { margin-top: 10px; padding: 12px; border: 2px solid var(--pink); border-radius: 10px; background: var(--tint); font-size: 0.95rem; }
     .slot-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .slot-actions button {
-      min-height: 44px;
-      padding: 0 14px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-    }
+    .slot-actions button { min-height: 44px; padding: 0 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
     .slot-actions .slot-yes { background: var(--deep-purple); color: #fff; border: 2px solid var(--deep-purple); }
     .slot-actions .slot-other { background: #fff; color: var(--deep-purple); border: 2px solid var(--deep-purple); }
     .slot-actions button:disabled { opacity: 0.5; cursor: default; }
 
-    @media (max-width: 480px) {
-      #chat-container {
-        width: calc(100vw - 20px);
-        height: calc(100vh - 90px);
-        right: 10px;
-        bottom: 80px;
-      }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 3px solid var(--deep-purple); outline-offset: 2px;
+    }
+
+    /* Narrow boxes (phones) */
+    @media (max-width: 420px) {
+      #chat-container { border-radius: 14px; }
+      #header { padding: 10px 12px; gap: 10px; }
+      .avatar { width: 40px; height: 40px; }
+      .avatar.small { display: none; }
+      #messages { padding: 12px 10px; }
+      .msg { font-size: 14.5px; }
+      .bot-bubble { padding: 10px 12px; }
+    }
+    /* Short boxes: slim header so there's room to read */
+    @media (max-height: 560px) {
+      #header { padding: 8px 12px; }
+      #header h2 { font-size: 1.05rem; }
+      #header p { display: none; }
+      .avatar { width: 34px; height: 34px; }
+      #quick { padding: 6px 12px; }
+      #input-area { padding: 6px 12px 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .msg, .typing-indicator span { animation: none; }
     }
   </style>
 </head>
 <body>
 
-<button id="open-btn" aria-hidden="true" tabindex="-1">
-  <div id="btn-flamey"></div>
-</button>
 
 <div id="chat-container" role="complementary" aria-label="Flamey chat assistant">
   <div id="header">
     <div class="avatar" id="flamey-avatar" aria-hidden="true"></div>
     <div>
       <h2>Hi! I'm Flamey</h2>
-      <p>Wrights Heating & Gas Services Assistant</p>
+      <p>Wrights Heating &amp; Gas Services</p>
     </div>
   </div>
 
@@ -420,12 +244,14 @@
 
   <div id="quick" role="group" aria-label="Quick questions">
     <button class="quick-btn" onclick="quick('prices')"><i class="fas fa-pound-sign" aria-hidden="true"></i> Prices</button>
-    <button class="quick-btn" onclick="quick('boiler-service')"><i class="fas fa-tools" aria-hidden="true"></i> Boiler Service</button>
-    <button class="quick-btn" onclick="quick('installation')"><i class="fas fa-wrench" aria-hidden="true"></i> Installation</button>
-    <button class="quick-btn" onclick="quick('areas')"><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Coverage</button>
-    <button class="quick-btn" onclick="quick('water-softener')"><i class="fas fa-tint" aria-hidden="true"></i> Water Softener</button>
-    <button class="quick-btn" onclick="quick('lpg')"><i class="fas fa-gas-pump" aria-hidden="true"></i> LPG</button>
+    <button class="quick-btn" onclick="showBookingForm('service')"><i class="fas fa-calendar-check" aria-hidden="true"></i> Book</button>
+    <button class="quick-btn" onclick="quick('boiler-service')"><i class="fas fa-tools" aria-hidden="true"></i> Boiler service</button>
     <button class="quick-btn" onclick="quick('repairs')"><i class="fas fa-screwdriver" aria-hidden="true"></i> Repairs</button>
+    <button class="quick-btn" onclick="quick('installation')"><i class="fas fa-fire" aria-hidden="true"></i> New boiler</button>
+    <button class="quick-btn" onclick="quick('aircon')"><i class="fas fa-snowflake" aria-hidden="true"></i> Air con</button>
+    <button class="quick-btn" onclick="quick('services')"><i class="fas fa-list" aria-hidden="true"></i> All services</button>
+    <button class="quick-btn" onclick="quick('areas')"><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Areas</button>
+    <button class="quick-btn" onclick="quick('contact')"><i class="fas fa-phone" aria-hidden="true"></i> Contact</button>
   </div>
 
   <div id="input-area">
@@ -452,7 +278,7 @@ function web3formsConfigured() {
 // ════════════════════════════════════════════════════════════════════════════════
 // FLAMEY MASCOT SVG
 // ════════════════════════════════════════════════════════════════════════════════
-const flamey = `<svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+const flamey = `<svg viewBox="105 110 210 350" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="200" cy="480" rx="80" ry="15" fill="rgba(0,0,0,0.1)"/>
     <path d="M 200 450 Q 160 440 150 400 Q 140 360 145 320 Q 150 280 160 250 Q 170 220 180 200 Q 185 180 190 160 Q 195 140 200 120 Q 205 140 210 160 Q 215 180 220 200 Q 230 220 240 250 Q 250 280 255 320 Q 260 360 250 400 Q 240 440 200 450 Z" fill="url(#flameGradient)"/>
     <path d="M 170 350 Q 150 340 140 310 Q 135 290 140 270 Q 145 250 155 235 Q 165 220 170 210 Q 175 200 178 185 Q 180 200 182 215 Q 185 230 190 250 Q 192 270 190 290 Q 188 310 180 330 Q 175 345 170 350 Z" fill="url(#accentGradient1)"/>
@@ -519,134 +345,147 @@ const flamey = `<svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
 </svg>`;
 
 document.getElementById('flamey-avatar').innerHTML = flamey;
-document.getElementById('btn-flamey').innerHTML = flamey;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // KNOWLEDGE BASE - facts about Wrights Heating & Gas Services
 // ════════════════════════════════════════════════════════════════════════════════
+// Everything Flamey says comes from here. It mirrors wrightsgas.co.uk and the
+// published price list; update both together. Prices are as published (+ VAT).
 const knowledgeBase = {
   company: {
-    name: "Wrights Heating & Gas Services Ltd",
-    phone: ["01920 468674", "07971252440"],
+    name: "Wrights Heating & Gas Services",
+    legalName: "Wrights Heating & Gas Services Ltd",
+    phone: "01920 468674",
+    mobile: "07971 252440",
+    email: "contact@wrightsgas.co.uk",
+    hours: "Monday to Friday, 8am to 5pm",
+    base: "Ware, Hertfordshire",
     experience: "19 years",
-    rating: "5 Star Google reviews",
-    gasRafeNumber: "529065",
-    vatNumber: "387001700",
-    qualifications: ["Fully qualified", "Gas Safe Registered", "Fully insured"],
+    founded: "2014",
+    gasSafeNumber: "529065",
+    accreditations: ["Gas Safe registered (No. 529065)", "WaterSafe approved", "CIPHE registered", "Fully insured up to £5m"],
+    team: "Every job is carried out by an engineer and an apprentice.",
     website: "www.wrightsgas.co.uk"
   },
 
-  pricing: {
-    boilerService: {
-      typical: "£100-£120",
-      detailed: "UK average is £80-£120. Our prices are competitive and we provide transparent quotes.",
-      includes: [
-        "Visual inspection of boiler and components",
-        "Safety checks including gas pressure and carbon monoxide",
-        "Cleaning of key components",
-        "Performance testing",
-        "Gas Safe certification"
-      ],
-      note: "Annual service recommended to maintain warranty and safety"
-    },
-    landlordCertificate: {
-      service: "Gas Safety Certificates",
-      requirement: "Required every 12 months by law",
-      includes: ["All gas appliance checks", "Safety certification", "Full compliance documentation"]
-    }
+  coverage: {
+    summary: "Hertfordshire, North London and the Essex border",
+    towns: ["Ware", "Hertford", "Hoddesdon", "Broxbourne", "Cheshunt", "Welwyn Garden City", "Hatfield", "Harlow", "Sawbridgeworth", "Much Hadham", "Standon", "Puckeridge", "Stevenage", "Bishop's Stortford"],
+    note: "Additional charges may apply outside this area."
+  },
+
+  // From the website price list. All exclude VAT unless stated.
+  prices: {
+    callOut: "£80 + VAT (includes the first hour and travel)",
+    hourly: "£55 + VAT per hour",
+    dayRateDomestic: "£450 + VAT (engineer and apprentice)",
+    dayRateCommercial: "£650 + VAT (engineer and apprentice)",
+    boilerService: "£100 + VAT (£120 including VAT)",
+    commercialBoilerService: "from £120 + VAT, plus parts",
+    boilerRepair: "charged at the call-out and hourly rate",
+    boilerReplacement: "from £1,600 + VAT",
+    centralHeating: "from £3,400 + VAT",
+    smartThermostat: "from £125 + VAT, plus parts",
+    gasSafetyCheck: "£80 + VAT",
+    landlordCertificate: "£120 + VAT",
+    cookerInstall: "from £150 + VAT, plus parts",
+    hobInstall: "from £100 + VAT, plus parts",
+    gasTightness: "£280 + VAT (commercial gas tightness certificate)",
+    tap: "from £55 + VAT, plus parts",
+    toiletRepair: "from £100 + VAT, plus parts",
+    toiletReplacement: "from £150 + VAT, plus parts",
+    leakingPipe: "from £80 + VAT, plus parts",
+    radiatorReplacement: "from £150 + VAT, plus parts",
+    powerFlush: "£380 + VAT for up to 10 radiators, then £15 + VAT per extra radiator",
+    shower: "from £120 + VAT, plus parts",
+    wasteRemoval: "from £80 + VAT",
+    payment: ["Cash", "Bank transfer", "Debit card", "Credit card"],
+    paymentTerms: "Payment is due when the work is finished, unless agreed otherwise in writing.",
+    terms: "Prices are subject to a site inspection where needed, and parts are charged separately. Estimates are free unless stated otherwise."
+  },
+
+  boilerService: {
+    includes: [
+      "Visual check of the boiler, flue and pipework",
+      "Combustion test with a flue gas analyser",
+      "Gas pressure and flow checks",
+      "Safety devices and controls checked",
+      "Key parts cleaned where needed, including the condensate trap",
+      "A written service record"
+    ],
+    why: "A yearly service keeps your boiler safe and efficient, and most manufacturers need one to keep the warranty valid.",
+    time: "Most services take about an hour."
   },
 
   services: {
-    boilerInstallation: {
-      name: "Boiler Installation & Replacements",
-      description: "New boiler installations and complete boiler replacements for domestic and commercial properties",
-      benefits: [
-        "Energy efficient modern boilers",
-        "Reduced heating bills",
-        "Expert installation by Gas Safe engineers",
-        "Competitive pricing with transparent quotes"
-      ],
-      brands: ["Worcester Bosch", "Vaillant", "Ideal", "Baxi"],
-      keywords: ["new boiler", "boiler replacement", "install boiler", "boiler upgrade"]
-    },
-
-    boilerRepairs: {
-      name: "Boiler & Heating Repairs",
-      description: "Expert repair services for all boiler makes and models",
-      services: [
-        "Radiator replacements and relocations",
-        "Valve replacements",
-        "Faulty controls repair",
-        "Smart thermostats installation",
-        "Powerflushing",
-        "Pipework repairs",
-        "Pump replacements",
-        "System chemical checks"
-      ],
-      keywords: ["broken boiler", "boiler repair", "heating not working", "radiator", "leak"]
-    },
-
-    applianceServices: {
-      name: "Appliance Installation & Repairs",
-      description: "Installation, servicing and repair for gas and hot water appliances",
-      services: [
-        "Cooker installation, service and repair",
-        "Fire service and repair",
-        "Gas hob installation, service and repair",
-        "Underground pipework and fusion welding",
-        "Unvented and vented hot water cylinder installation, service and repair"
-      ],
-      keywords: ["cooker", "hob", "fire", "hot water cylinder", "appliance"]
-    },
-
-    lpgServices: {
-      name: "LPG Installations & Repairs",
-      description: "Comprehensive LPG gas services for properties not connected to mains gas, including tank installation and maintenance",
-      keywords: ["lpg", "propane", "bottled gas", "tank"]
-    },
-
-    plumbingBathrooms: {
-      name: "Plumbing Repairs & Bathrooms",
-      description: "Full plumbing and bathroom services, including drainage repairs",
-      keywords: ["plumbing", "bathroom", "tap", "shower", "toilet", "drain", "drainage"]
-    },
-
-    waterSofteners: {
-      name: "Water Softener Installation",
-      description: "Our area has incredibly hard water. A water softener offers many advantages:",
-      benefits: [
-        "Reduces maintenance on sanitary ware, showers and taps",
-        "Protects white goods from limescale",
-        "Reduces limescale buildup in hot water cylinders",
-        "Improves efficiency and reduces running costs",
-        "Softer skin and hair",
-        "Less cleaning required"
-      ],
-      recommendation: "Highly recommended for this area due to hard water",
-      keywords: ["water softener", "hard water", "limescale", "scale"]
-    }
+    installation: [
+      "Domestic and commercial boiler installation and replacement",
+      "New heating systems and extensions",
+      "Underfloor heating design and installation",
+      "Heating upgrades to improve efficiency",
+      "Multi-fuel installations",
+      "Unvented cylinders"
+    ],
+    installationPromises: [
+      "12-month parts and labour guarantee, on top of the manufacturer's warranty",
+      "Registered with Gas Safe and the boiler manufacturer",
+      "Fully insured up to £5m",
+      "Free quote"
+    ],
+    repairs: [
+      "No heating or hot water",
+      "Boilers losing pressure or locking out",
+      "Leaks and noisy boilers",
+      "Radiator replacements and moves",
+      "Valve and pump replacements",
+      "Faulty controls and smart thermostats",
+      "Power flushing and balancing",
+      "System chemical checks"
+    ],
+    appliances: [
+      "Cooker installation, service and repair",
+      "Gas hob installation, service and repair",
+      "Gas fire service and repair",
+      "Water heater and space heater installation, service and repair",
+      "Unvented and vented hot water cylinders",
+      "Underground pipework and fusion welding"
+    ],
+    lpg: [
+      "Bulk tank and metered installations",
+      "LPG boiler installation, service and repair",
+      "Cylinder changeover valves",
+      "Underground MDPE service pipework",
+      "Landlord certificates for park homes and leisure accommodation",
+      "Campervan and motorhome rental gas certificates",
+      "Risk assessments of bulk gas installations",
+      "Temporary gas supplies"
+    ],
+    plumbing: [
+      "Complete bathroom renovations, including tiling",
+      "Burst pipes and leaks",
+      "Taps, sinks, toilets and showers",
+      "Leaking or blocked waste pipework",
+      "Water softener installation",
+      "Instant boiling water taps and outside taps",
+      "White goods and waste disposal units"
+    ],
+    waterSoftener: "Hertfordshire has some of the hardest water in the UK. A softener cuts limescale in your boiler, cylinder, taps, showers and appliances, helping them last longer and run more efficiently."
   },
 
-  coverage: {
-    main: ["Hertfordshire", "North London"],
-    specific: ["Ware", "Hertford", "Hoddesdon", "Broxbourne", "Welwyn Garden City", "Harlow", "Stevenage", "Bishops Stortford", "Potters Bar"],
-    surrounding: "and surrounding areas",
-    keywords: ["area", "cover", "location", "where", "serve"]
-  },
-
-  emergency: {
-    available: false,
-    response: "We can arrange appointments as soon as possible. For gas emergencies, call National Gas Emergency Service on 0800 111 999",
-    contact: "Call us on 01920 468674 or 07971252440 to discuss urgent appointments",
-    keywords: ["emergency", "urgent", "broken", "no heating", "leak", "asap", "now"]
+  airCon: {
+    start: "2027",
+    systems: [
+      "Single split: one room, such as a bedroom or home office",
+      "Multi-split: two to four rooms from one outdoor unit",
+      "Ceiling cassette: open-plan spaces and offices",
+      "Ducted: whole floors and new builds (quoted after a survey)"
+    ],
+    extras: "Most systems heat as well as cool. We'll also service and repair systems we didn't install."
   },
 
   gasSafety: {
-    registered: true,
-    number: "529065",
-    info: "Gas Safe Register is the official list of gas engineers qualified to work safely and legally on gas appliances. By law, all gas engineers must be on the Gas Safe Register.",
-    landlordDuties: "Landlords must have all gas appliances checked every 12 months by a Gas Safe registered engineer",
-    warning: "Badly fitted and poorly serviced appliances can cause gas leaks, fires, explosions and carbon monoxide poisoning"
+    emergency: "0800 111 999",
+    landlordDuty: "Landlords must have every gas appliance they provide checked by a Gas Safe registered engineer every 12 months, and give tenants a copy of the record."
   }
 };
 
@@ -683,7 +522,7 @@ const FUZZY_TERMS = [
   'repairs', 'broken', 'landlord', 'certificate', 'softener', 'water', 'plumbing',
   'bathroom', 'cooker', 'appliance', 'emergency', 'urgent', 'price', 'prices', 'quote',
   'cover', 'coverage', 'area', 'lpg', 'propane', 'radiator', 'thermostat', 'cylinder',
-  'pressure', 'leaking', 'heating'
+  'pressure', 'leaking', 'heating', 'conditioning', 'landlord', 'shower', 'toilet'
 ];
 
 function normalizeTypos(msg) {
@@ -708,75 +547,79 @@ function normalizeTypos(msg) {
 // ════════════════════════════════════════════════════════════════════════════════
 function analyzeIntent(userMessageRaw) {
   const msg = normalizeTypos(userMessageRaw.toLowerCase());
+  const has = re => re.test(msg);
 
-  // HARD URGENCY (safety-critical only — plain "broken"/"not working" is NOT
-  // treated as urgent on its own, since that routes to the repairs intent instead)
-  if (/(gas smell|smell(ing)? gas|smell of gas|gas leak|leaking gas|flooding|\bflood\b|\bemergency\b|\burgent\b|\basap\b|right now|immediately)/.test(msg)) {
-    return { intent: 'urgent_booking', confidence: 0.98 };
+  // SAFETY FIRST: gas smell or carbon monoxide always gets the emergency number
+  if (has(/(gas smell|smell(ing)? (of )?gas|gas leak|leaking gas|carbon monoxide|\bco alarm\b|co detector)/)) {
+    return { intent: 'gas_safety_emergency', confidence: 0.99 };
+  }
+  if (has(/(flooding|\bflood\b|\bemergency\b|\burgent\b|\basap\b|right now|immediately|today)/)) {
+    return { intent: 'urgent_booking', confidence: 0.95 };
   }
 
-  // PRICE INQUIRIES
-  if (/(how much|price|cost|charge|fee|pricing|quote)/.test(msg)) {
-    if (/(boiler service|service boiler|annual service)/.test(msg)) {
-      return { intent: 'price_boiler_service', confidence: 0.95 };
-    }
-    if (/(new boiler|boiler install|replacement)/.test(msg)) {
-      return { intent: 'price_installation', confidence: 0.95 };
-    }
-    if (/(repair|fix)/.test(msg)) {
-      return { intent: 'price_repair', confidence: 0.9 };
-    }
-    if (/(landlord|certificate|gas safe|cp12)/.test(msg)) {
-      return { intent: 'price_landlord_cert', confidence: 0.95 };
-    }
+  // AIR CONDITIONING (from 2027)
+  if (has(/(air ?con|air conditioning|\bac unit|\ba\/c\b|aircon|cooling system|split system|multi.?split|cassette)/)) {
+    return { intent: 'aircon', confidence: 0.95 };
+  }
+
+  // PRICES
+  if (has(/(how much|price|prices|cost|charge|fee|pricing|rate|rates|tariff)/)) {
+    if (has(/(power ?flush)/)) return { intent: 'price_powerflush', confidence: 0.95 };
+    if (has(/(boiler service|service (my |the )?boiler|annual service|servicing)/)) return { intent: 'price_boiler_service', confidence: 0.95 };
+    if (has(/(landlord|certificate|\bcp12\b|gas safe(ty)? (check|cert))/)) return { intent: 'price_landlord_cert', confidence: 0.95 };
+    if (has(/(\btaps?\b|toilet|\bloo\b|shower|leak|pipe|radiator|plumb)/)) return { intent: 'price_plumbing', confidence: 0.9 };
+    if (has(/(cooker|\bhob\b|oven|gas fire|tightness)/)) return { intent: 'price_gas_appliances', confidence: 0.9 };
+    if (has(/(new boiler|boiler install|replace(ment)?|central heating|new heating|underfloor|combi)/)) return { intent: 'price_installation', confidence: 0.95 };
+    if (has(/(thermostat|smart)/)) return { intent: 'price_installation', confidence: 0.85 };
+    if (has(/(repair|fix|call.?out|callout|hourly|per hour|labour|day rate)/)) return { intent: 'price_repair', confidence: 0.9 };
     return { intent: 'pricing_general', confidence: 0.85 };
   }
 
+  if (has(/(^|\s)quote\b/)) return { intent: 'installation', confidence: 0.8 };
+
   // GREETING
-  if (/^(hi|hello|hey|good morning|good afternoon|good evening|hiya)\b/.test(msg)) {
+  if (has(/^(hi|hello|hey|good morning|good afternoon|good evening|hiya|morning|afternoon)\b/)) {
     return { intent: 'greeting', confidence: 0.9 };
   }
 
-  // SERVICE-SPECIFIC INQUIRIES
-  if (/(boiler service|annual service|service boiler|boiler check)/.test(msg)) {
+  // ABOUT THE BUSINESS
+  if (has(/(opening hours|open on|are you open|what time|when are you|hours|weekend|saturday|sunday|bank holiday)/)) {
+    return { intent: 'hours_contact', confidence: 0.9 };
+  }
+  if (has(/(phone number|contact|email|call you|ring you|speak to)/)) {
+    return { intent: 'hours_contact', confidence: 0.85 };
+  }
+  if (has(/(\bpay\b|payment|card|cash|bank transfer|invoice)/)) {
+    return { intent: 'payment', confidence: 0.9 };
+  }
+  if (has(/(guarantee|warranty|insured|insurance|gas safe|watersafe|water safe|ciphe|qualified|accredit|registered|trust|reviews?|experience|about you|who are you)/)) {
+    return { intent: 'about', confidence: 0.85 };
+  }
+  if (has(/(what (services?|do you do|work do you)|services? do you|what can you help|everything you do|all services?)/)) {
+    return { intent: 'services_overview', confidence: 0.9 };
+  }
+
+  // SERVICES
+  if (has(/(boiler service|annual service|service (my |the )?boiler|boiler check|servicing)/)) {
     return { intent: 'boiler_service_info', confidence: 0.9 };
   }
+  if (has(/(water softener|hard water|limescale|\bscale\b)/)) return { intent: 'water_softener', confidence: 0.9 };
+  if (has(/(\blpg\b|propane|bottled gas|gas tank|bulk tank|park home|campervan|motorhome)/)) return { intent: 'lpg', confidence: 0.9 };
+  if (has(/(power ?flush)/)) return { intent: 'repairs', confidence: 0.85 };
+  if (has(/(cooker|\bhob\b|\boven\b|gas fire|\bfire\b|water heater|space heater|cylinder)/)) return { intent: 'appliances', confidence: 0.85 };
+  if (has(/(plumbing|plumber|bathroom|\btap\b|shower|toilet|\bloo\b|\bsink\b|\bdrain\b|drainage|blocked|burst pipe|waste pipe)/)) return { intent: 'plumbing', confidence: 0.85 };
+  if (has(/(new boiler|boiler install|\binstallation\b|\binstall\b|replacement|replace (my |the )?boiler|upgrade|underfloor|central heating|new heating|combi)/)) return { intent: 'installation', confidence: 0.9 };
+  if (has(/(repair|fix|broken|fault|not working|stopped working|no heating|no hot water|leak|leaking|pilot light|pressure|radiator|thermostat|noisy|banging|error code|locked out|lockout)/)) return { intent: 'repairs', confidence: 0.85 };
+  if (has(/(landlord|certificate|\bcp12\b|gas safety check|gas safe check|letting|tenant)/)) return { intent: 'landlord_cert', confidence: 0.9 };
 
-  if (/(water softener|hard water|limescale|scale)/.test(msg)) {
-    return { intent: 'water_softener', confidence: 0.9 };
+  // COVERAGE (a town name or "do you cover")
+  const town = knowledgeBase.coverage.towns.find(t => msg.includes(t.toLowerCase()));
+  if (town || has(/(\barea\b|\bareas\b|\bcover\b|location|\bwhere\b|region|do you serve|come to|postcode|near me|north london|essex|hertfordshire|herts)/)) {
+    return { intent: 'coverage', confidence: 0.85, town };
   }
 
-  if (/(\blpg\b|propane|bottled gas|gas tank)/.test(msg)) {
-    return { intent: 'lpg', confidence: 0.9 };
-  }
-
-  if (/(plumbing|bathroom|\btap\b|shower|toilet|\bdrain\b|drainage)/.test(msg)) {
-    return { intent: 'plumbing', confidence: 0.85 };
-  }
-
-  if (/(cooker|\bhob\b|\bfire\b|hot water cylinder|cylinder)/.test(msg)) {
-    return { intent: 'appliances', confidence: 0.85 };
-  }
-
-  if (/(new boiler|boiler install|\binstallation\b|\binstall\b|replacement|upgrade)/.test(msg)) {
-    return { intent: 'installation', confidence: 0.9 };
-  }
-
-  if (/(repair|fix|broken|fault|not working|stopped working|no heating|no hot water|leak|leaking|pilot light|no pressure)/.test(msg)) {
-    return { intent: 'repairs', confidence: 0.85 };
-  }
-
-  if (/(landlord|certificate|cp12|gas safe check|letting)/.test(msg)) {
-    return { intent: 'landlord_cert', confidence: 0.9 };
-  }
-
-  // LOCATION/COVERAGE
-  if (/(\barea\b|\bcover\b|location|\bwhere\b|region|do you serve|come to|postcode)/.test(msg)) {
-    return { intent: 'coverage', confidence: 0.85 };
-  }
-
-  // BOOKING/CONTACT
-  if (/(\bbook\b|appointment|\bvisit\b|arrange|schedule|come out)/.test(msg)) {
+  // BOOKING
+  if (has(/(\bbook\b|booking|appointment|\bvisit\b|arrange|schedule|come out|available|availability)/)) {
     return { intent: 'booking', confidence: 0.9 };
   }
 
@@ -799,10 +642,11 @@ const FOLLOWUP_RE = /^(ok|okay|yes|yeah|yep|sure|please do|sounds good|go ahead|
 const FOLLOWUP_BOOKING_TYPE = {
   boiler_service_info: 'service', price_boiler_service: 'service',
   installation: 'quote', price_installation: 'quote',
-  repairs: 'repair', price_repair: 'repair',
-  landlord_cert: 'certificate', price_landlord_cert: 'certificate',
+  repairs: 'repair', price_repair: 'repair', price_powerflush: 'repair',
+  landlord_cert: 'certificate', price_landlord_cert: 'landlord',
   water_softener: 'quote', pricing_general: 'quote', coverage: 'quote',
-  lpg: 'quote', plumbing: 'repair', appliances: 'quote'
+  lpg: 'quote', plumbing: 'other', price_plumbing: 'other', appliances: 'other',
+  price_gas_appliances: 'other', aircon: 'aircon', urgent_booking: 'repair'
 };
 
 function resolveFollowup(rawText) {
@@ -814,115 +658,181 @@ function resolveFollowup(rawText) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
-// RESPONSE GENERATION — HELP-FIRST APPROACH
+// RESPONSE GENERATION — HELP-FIRST: answer the question, then offer the next step.
+// Every fact comes from knowledgeBase, which mirrors the website and price list.
 // ════════════════════════════════════════════════════════════════════════════════
+const KB = knowledgeBase;
+const ticks = list => list.map(i => `✓ ${i}`).join('\n');
+const bullets = list => list.map(i => `• ${i}`).join('\n');
+const priceBox = (label, value, note) =>
+  `<div class="price-box">${label}<span class="price">${value}</span>${note || ''}</div>`;
+const callBox = () =>
+  `<div class="info-box">📞 Call <strong>${KB.company.phone}</strong> or <strong>${KB.company.mobile}</strong>, ${KB.company.hours}.</div>`;
+
 function generateResponse(intent, userMessage) {
-  switch(intent.intent) {
+  switch (intent.intent) {
     case 'greeting': {
       if (conversationContext.greetedOnce) {
-        return `Hey again! 👋 What else can I help with?` + generateActionButtons(['prices', 'book_service', 'call_now']);
+        return `Hello again! 👋 What else can I help with?` + generateActionButtons(['prices', 'book_service', 'call_now']);
       }
       conversationContext.greetedOnce = true;
-      return `Hello! 👋 I'm Flamey from ${knowledgeBase.company.name}.\n\nWe've been serving ${knowledgeBase.company.experience} with ${knowledgeBase.company.rating}!\n\n<strong>I'm here to help you with:</strong>\n• Pricing information\n• Boiler services & repairs\n• New installations\n• Water softeners & LPG\n• Plumbing & bathrooms\n• Landlord certificates\n\n<strong>What can I help you with today?</strong>`;
+      return `Hello! 👋 I'm Flamey from ${KB.company.name}.\n\nWe're a Gas Safe registered team based in Ware, looking after homes and businesses across ${KB.coverage.summary} for ${KB.company.experience}.\n\n<strong>Ask me about:</strong>\n• Prices\n• Boiler servicing and repairs\n• New boilers and heating\n• Plumbing, bathrooms and LPG\n• Landlord certificates\n• Air conditioning (coming in 2027)\n\nOr tap <strong>Book</strong> and I'll suggest a day that suits our diary.` +
+        generateActionButtons(['book_service', 'prices', 'aircon']);
     }
 
+    case 'gas_safety_emergency':
+      return `<strong>⚠️ If you smell gas or your CO alarm is sounding</strong>\n\n1. Turn off the gas at the meter if it's safe to.\n2. Open doors and windows. Don't use switches, flames or electrical items.\n3. Leave the property and call the <strong>National Gas Emergency Service on ${KB.gasSafety.emergency}</strong>. It's free, 24 hours a day.\n\nIf anyone feels unwell (headache, dizziness, sickness), get medical help straight away.\n\n<div class="info-box">We don't offer an emergency call-out service, but once it's safe we can book a repair as soon as possible.</div>` +
+        generateActionButtons(['book_repair', 'call_now']);
+
     case 'urgent_booking':
-      return `<strong>🔧 Urgent Assistance Needed</strong>\n\nI understand you need help quickly! While we don't offer emergency call-outs, we can arrange an appointment as soon as possible.\n\n<div class="info-box">⚠️ <strong>If you smell gas:</strong> Call the National Gas Emergency Service immediately on <strong>0800 111 999</strong></div>\n\n<div class="price-box">📞 Call us to discuss urgent appointments:<br><strong>01920 468674</strong> or <strong>07971252440</strong></div>\n\nOr fill in the form below and we'll contact you right away:` +
-      generateActionButtons(['book_repair', 'call_now']);
+      return `<strong>🔧 Need help quickly?</strong>\n\nWe don't offer an emergency call-out service, but we'll fit you in as soon as we can.\n\n${callBox()}\n<div class="info-box">⚠️ If you smell gas, call the National Gas Emergency Service on <strong>${KB.gasSafety.emergency}</strong> straight away.</div>` +
+        generateActionButtons(['book_repair', 'call_now']);
+
+    case 'aircon':
+      return `<strong>❄️ Air conditioning: coming in ${KB.airCon.start}</strong>\n\nFrom ${KB.airCon.start}, ${KB.company.name} will be installing and servicing air conditioning across ${KB.coverage.summary}.\n\n<strong>Systems we'll fit:</strong>\n${bullets(KB.airCon.systems)}\n\n${KB.airCon.extras}\n\n<div class="info-box">Bookings open in ${KB.airCon.start}. Register your interest now and we'll contact you as soon as we're taking installs, ahead of the summer rush. Prices are quoted after a home survey.</div>` +
+        generateActionButtons(['book_aircon', 'call_now']);
 
     case 'price_boiler_service':
-      return `<strong>💰 Boiler Service Pricing</strong>\n\n<div class="price-box">Typical Cost<span class="price">${knowledgeBase.pricing.boilerService.typical}</span>UK average price range</div>\n\n<strong>What's Included:</strong>\n${knowledgeBase.pricing.boilerService.includes.map(item => `✓ ${item}`).join('\n')}\n\n<div class="info-box">💡 <strong>Good to know:</strong> Annual servicing is recommended to maintain your warranty and ensure safe operation. We provide Gas Safe certification with every service.</div>\n\n<strong>Would you like to:</strong>` +
-      generateActionButtons(['book_service', 'more_services']);
+      return `<strong>💰 Boiler service</strong>` +
+        priceBox('Domestic boiler service', '£100 + VAT', '£120 including VAT') +
+        `Commercial boilers: ${KB.prices.commercialBoilerService}.\n\n<strong>What's included:</strong>\n${ticks(KB.boilerService.includes)}\n\n${KB.boilerService.time} ${KB.boilerService.why}` +
+        generateActionButtons(['book_service', 'call_now']);
 
     case 'price_installation':
-      return `<strong>💰 New Boiler Installation Pricing</strong>\n\nBoiler installation costs vary based on:\n• Boiler type (combi, system, regular)\n• Boiler size and brand\n• Complexity of installation\n• Any additional work needed\n\n<strong>Why choose us:</strong>\n✓ ${knowledgeBase.company.experience} experience\n✓ Gas Safe registered engineers\n✓ Competitive transparent pricing\n✓ Quality brands: ${knowledgeBase.services.boilerInstallation.brands.join(', ')}\n\n<div class="info-box">💡 Modern boilers can save you money on heating bills through improved efficiency!</div>\n\n<strong>I'd love to arrange a free, no-obligation quote for you:</strong>` +
-      generateActionButtons(['book_quote', 'call_now']);
+      return `<strong>💰 New boilers and heating</strong>\n\n• Boiler replacement: <strong>${KB.prices.boilerReplacement}</strong>\n• Central heating installation: <strong>${KB.prices.centralHeating}</strong>\n• Smart thermostat: <strong>${KB.prices.smartThermostat}</strong>\n\nThe final price depends on the boiler, your home and any extra work, so we give you a free, itemised quote first.\n\n<strong>Every installation includes:</strong>\n${ticks(KB.services.installationPromises)}` +
+        generateActionButtons(['book_quote', 'call_now']);
 
     case 'price_repair':
-      return `<strong>💰 Boiler Repair Pricing</strong>\n\nRepair costs depend on:\n• The specific issue\n• Parts required\n• Labour time\n\nWe provide honest, transparent pricing before starting any work.\n\n<strong>Common repairs we handle:</strong>\n${knowledgeBase.services.boilerRepairs.services.slice(0, 6).map(s => `• ${s}`).join('\n')}\n\n<div class="info-box">⚡ Fast turnaround on parts ordering - we work with all major brands</div>\n\n<strong>Let's get your heating sorted:</strong>` +
-      generateActionButtons(['book_repair', 'emergency_call']);
+      return `<strong>💰 Repairs and call-outs</strong>` +
+        priceBox('Call-out', KB.prices.callOut) +
+        `• After the first hour: <strong>${KB.prices.hourly}</strong>\n• Full day (domestic): <strong>${KB.prices.dayRateDomestic}</strong>\n• Full day (commercial): <strong>${KB.prices.dayRateCommercial}</strong>\n\nParts are extra, and we'll always tell you the cost before fitting them.` +
+        generateActionButtons(['book_repair', 'call_now']);
+
+    case 'price_powerflush':
+      return `<strong>💰 Power flushing</strong>` +
+        priceBox('Power flush', '£380 + VAT', 'Up to 10 radiators, then £15 + VAT per extra radiator') +
+        `A power flush clears sludge from your heating system, helping cold radiators heat up properly and your boiler work less hard.` +
+        generateActionButtons(['book_repair', 'call_now']);
 
     case 'price_landlord_cert':
-      return `<strong>💰 Landlord Gas Safety Certificates</strong>\n\n${knowledgeBase.pricing.landlordCertificate.requirement}\n\n<strong>What's included:</strong>\n${knowledgeBase.pricing.landlordCertificate.includes.map(i => `✓ ${i}`).join('\n')}\n\n<div class="info-box">⚖️ <strong>Legal Requirement:</strong> Landlords must have all gas appliances checked every 12 months by a Gas Safe registered engineer (No. ${knowledgeBase.gasSafety.number})</div>\n\n<strong>Ready to book your inspection?</strong>` +
-      generateActionButtons(['book_cert', 'call_now']);
+      return `<strong>💰 Gas safety certificates</strong>\n\n• Landlord gas safety certificate: <strong>${KB.prices.landlordCertificate}</strong>\n• Gas safety check: <strong>${KB.prices.gasSafetyCheck}</strong>\n• Commercial gas tightness certificate: <strong>${KB.prices.gasTightness}</strong>\n\n<div class="info-box">⚖️ ${KB.gasSafety.landlordDuty}</div>\nWe can do your certificate on the same visit as your boiler service.` +
+        generateActionButtons(['book_landlord', 'call_now']);
+
+    case 'price_plumbing':
+      return `<strong>💰 Plumbing prices</strong>\n\n• Tap repair or replacement: ${KB.prices.tap}\n• Toilet repair: ${KB.prices.toiletRepair}\n• Toilet replacement: ${KB.prices.toiletReplacement}\n• Leaking pipe repair: ${KB.prices.leakingPipe}\n• Shower repair or replacement: ${KB.prices.shower}\n• Radiator replacement: ${KB.prices.radiatorReplacement}\n• Power flush: ${KB.prices.powerFlush}\n\nAnything else is charged at the call-out (${KB.prices.callOut}) and hourly rate.` +
+        generateActionButtons(['book_other', 'call_now']);
+
+    case 'price_gas_appliances':
+      return `<strong>💰 Gas appliances</strong>\n\n• Gas cooker installation: ${KB.prices.cookerInstall}\n• Gas hob installation: ${KB.prices.hobInstall}\n• Commercial gas tightness certificate: ${KB.prices.gasTightness}\n• Gas pipework and repairs: charged at the call-out and hourly rate` +
+        generateActionButtons(['book_other', 'call_now']);
 
     case 'pricing_general':
-      return `<strong>💰 Our Pricing</strong>\n\nWe believe in transparent, competitive pricing. Every job is different, so costs vary based on your specific needs.\n\n<strong>Quick price guide:</strong>\n• Boiler Service: ${knowledgeBase.pricing.boilerService.typical}\n• New Boiler Installation: Free quote required\n• Repairs: Depends on issue & parts\n• Landlord Certificates: Competitive rates\n\n<strong>What makes us great value:</strong>\n✓ ${knowledgeBase.company.experience} experience\n✓ No hidden fees\n✓ Quality workmanship guaranteed\n✓ ${knowledgeBase.company.rating}\n\n<strong>What service are you interested in?</strong>` +
-      generateActionButtons(['boiler_service', 'installation', 'repairs', 'get_quote']);
+      return `<strong>💰 Our main prices</strong> <span class="muted">(+ VAT)</span>\n\n• Boiler service: <strong>£100</strong>\n• Call-out, including the first hour: <strong>£80</strong>\n• Each hour after: <strong>£55</strong>\n• Landlord gas safety certificate: <strong>£120</strong>\n• Power flush (up to 10 radiators): <strong>£380</strong>\n• Boiler replacement: <strong>from £1,600</strong>\n• Central heating installation: <strong>from £3,400</strong>\n\n${KB.prices.terms}\n\n<strong>What would you like a price for?</strong>` +
+        generateActionButtons(['boiler_service', 'repairs', 'plumbing_prices', 'installation']);
 
     case 'boiler_service_info':
-      return `<strong>🔧 Annual Boiler Service</strong>\n\n${knowledgeBase.pricing.boilerService.detailed}\n\n<strong>Why service your boiler annually?</strong>\n• Maintains efficiency & saves money\n• Keeps warranty valid\n• Prevents breakdowns\n• Ensures safety\n• Gas Safe certification\n\n<strong>What we check:</strong>\n${knowledgeBase.pricing.boilerService.includes.map(i => `✓ ${i}`).join('\n')}\n\n<div class="price-box">Price Range<span class="price">${knowledgeBase.pricing.boilerService.typical}</span></div>` +
-      generateActionButtons(['book_service', 'call_now']);
-
-    case 'water_softener':
-      return `<strong>💧 Water Softener Installation</strong>\n\n${knowledgeBase.services.waterSofteners.description}\n\n<strong>Benefits:</strong>\n${knowledgeBase.services.waterSofteners.benefits.map(b => `✓ ${b}`).join('\n')}\n\n<div class="info-box">🌊 <strong>${knowledgeBase.services.waterSofteners.recommendation}</strong></div>\n\n<strong>Interested in finding out more?</strong>` +
-      generateActionButtons(['book_quote', 'call_now']);
-
-    case 'lpg':
-      return `<strong>⛽ LPG Installations & Repairs</strong>\n\n${knowledgeBase.services.lpgServices.description}\n\n<div class="info-box">🏡 Not on mains gas? LPG is a reliable alternative for heating, cooking and hot water, and we handle installation, tank setup and ongoing maintenance.</div>\n\n<strong>Want a quote for your property?</strong>` +
-      generateActionButtons(['book_quote', 'call_now']);
-
-    case 'plumbing':
-      return `<strong>🚿 Plumbing & Bathroom Services</strong>\n\n${knowledgeBase.services.plumbingBathrooms.description}\n\n<strong>We also work alongside David Lloyd Clubs on plumbing and drainage maintenance</strong>, so your home gets the same standard of work.\n\n<strong>Need something sorted?</strong>` +
-      generateActionButtons(['book_repair', 'call_now']);
-
-    case 'appliances':
-      return `<strong>🔥 Appliance Installation & Repairs</strong>\n\n${knowledgeBase.services.applianceServices.description}\n\n<strong>Services include:</strong>\n${knowledgeBase.services.applianceServices.services.map(s => `✓ ${s}`).join('\n')}\n\n<strong>What do you need help with?</strong>` +
-      generateActionButtons(['book_service', 'call_now']);
+      return `<strong>🔧 Annual boiler service</strong>\n\n${KB.boilerService.why}` +
+        priceBox('Domestic boiler service', '£100 + VAT', '£120 including VAT') +
+        `<strong>What we check:</strong>\n${ticks(KB.boilerService.includes)}\n\n${KB.boilerService.time}` +
+        generateActionButtons(['book_service', 'call_now']);
 
     case 'installation':
-      return `<strong>🔥 Boiler Installation & Replacements</strong>\n\n${knowledgeBase.services.boilerInstallation.description}\n\n<strong>Benefits of a new boiler:</strong>\n${knowledgeBase.services.boilerInstallation.benefits.map(b => `✓ ${b}`).join('\n')}\n\n<strong>Brands we install:</strong>\n${knowledgeBase.services.boilerInstallation.brands.join(' • ')}\n\n<div class="info-box">💡 Modern boilers can be up to 90% efficient, significantly reducing your energy bills!</div>` +
-      generateActionButtons(['book_quote', 'call_now']);
+      return `<strong>🔥 New boilers and heating</strong>\n\n${bullets(KB.services.installation)}\n\n<strong>Every installation includes:</strong>\n${ticks(KB.services.installationPromises)}\n\nBoiler replacements start <strong>${KB.prices.boilerReplacement}</strong>.` +
+        generateActionButtons(['book_quote', 'call_now']);
 
     case 'repairs':
-      return `<strong>🔧 Boiler & Heating Repairs</strong>\n\nWe repair all makes and models of boilers.\n\n<strong>Services we offer:</strong>\n${knowledgeBase.services.boilerRepairs.services.map(s => `• ${s}`).join('\n')}\n\n<div class="info-box">⚡ Fast service with quick parts ordering from all major brands</div>\n\n<strong>Need a repair?</strong>` +
-      generateActionButtons(['book_repair', 'emergency_call']);
+      return `<strong>🔧 Boiler and heating repairs</strong>\n\nWe repair all makes of boiler, domestic and commercial.\n\n${bullets(KB.services.repairs)}` +
+        priceBox('Call-out', KB.prices.callOut, `Then ${KB.prices.hourly}`) +
+        `We find the fault, explain it and give you the price before we start.` +
+        generateActionButtons(['book_repair', 'call_now']);
 
     case 'landlord_cert':
-      return `<strong>📋 Landlord Gas Safety Certificates</strong>\n\n${knowledgeBase.pricing.landlordCertificate.requirement}\n\n<strong>Included:</strong>\n${knowledgeBase.pricing.landlordCertificate.includes.map(i => `✓ ${i}`).join('\n')}\n\n<div class="info-box">⚖️ <strong>Your Legal Responsibility:</strong><br>${knowledgeBase.gasSafety.landlordDuties}</div>\n\n<strong>We're Gas Safe Registered (No. ${knowledgeBase.gasSafety.number})</strong>` +
-      generateActionButtons(['book_cert', 'call_now']);
+      return `<strong>📋 Landlord gas safety certificates</strong>\n\n${KB.gasSafety.landlordDuty}` +
+        priceBox('Landlord certificate', KB.prices.landlordCertificate) +
+        `We're Gas Safe registered (No. ${KB.company.gasSafeNumber}), and we also certify park homes, leisure accommodation and rental campervans on LPG.` +
+        generateActionButtons(['book_landlord', 'call_now']);
 
-    case 'coverage':
-      return `<strong>📍 Areas We Cover</strong>\n\nWe serve ${knowledgeBase.coverage.main.join(' and ')} ${knowledgeBase.coverage.surrounding}.\n\n<strong>Including:</strong>\n${knowledgeBase.coverage.specific.join(' • ')}\n\n<div class="info-box">📞 Not sure if we cover your area? Give us a call on <strong>01920 468674</strong> and we'll let you know!</div>\n\n<strong>What can I help you with?</strong>` +
-      generateActionButtons(['book_service', 'get_quote']);
+    case 'water_softener':
+      return `<strong>💧 Water softeners</strong>\n\n${KB.services.waterSoftener}\n\nWe supply and fit softeners and can advise on the right size for your home.` +
+        generateActionButtons(['book_quote', 'call_now']);
+
+    case 'lpg':
+      return `<strong>⛽ LPG installations and repairs</strong>\n\nNot on mains gas? We have years of LPG experience:\n\n${bullets(KB.services.lpg)}` +
+        generateActionButtons(['book_quote', 'call_now']);
+
+    case 'plumbing':
+      return `<strong>🚿 Plumbing and bathrooms</strong>\n\n${bullets(KB.services.plumbing)}\n\nWe're WaterSafe approved and CIPHE registered. Ask me "how much is a tap repair" or similar for prices.` +
+        generateActionButtons(['book_other', 'plumbing_prices']);
+
+    case 'appliances':
+      return `<strong>🔥 Gas appliances</strong>\n\n${bullets(KB.services.appliances)}\n\nCooker installation ${KB.prices.cookerInstall}; hob installation ${KB.prices.hobInstall}.` +
+        generateActionButtons(['book_other', 'call_now']);
+
+    case 'services_overview':
+      return `<strong>🛠️ What we do</strong>\n\n• Boiler servicing and repairs\n• New boilers, central heating and underfloor heating\n• Gas safety and landlord certificates\n• Gas cookers, hobs and fires\n• LPG installations and repairs\n• Plumbing, bathrooms and water softeners\n• Air conditioning, from 2027\n\nDomestic and commercial, across ${KB.coverage.summary}.` +
+        generateActionButtons(['prices', 'book_service', 'aircon']);
+
+    case 'about':
+      return `<strong>⭐ About ${KB.company.name}</strong>\n\nPatrick Wright set up the business in ${KB.company.founded} and has ${KB.company.experience}' experience in the trade. We're rated 5 stars on Google.\n\n${ticks(KB.company.accreditations)}\n✓ 12-month parts and labour guarantee on installations\n\n${KB.company.team}` +
+        generateActionButtons(['book_service', 'call_now']);
+
+    case 'hours_contact':
+      return `<strong>📞 Get in touch</strong>\n\n• Phone: <strong>${KB.company.phone}</strong> or <strong>${KB.company.mobile}</strong>\n• Email: <strong>${KB.company.email}</strong>\n• Hours: ${KB.company.hours}\n\nWe don't work weekends or bank holidays, and we don't offer an emergency call-out service.` +
+        generateActionButtons(['book_service', 'call_now']);
+
+    case 'payment':
+      return `<strong>💳 Paying us</strong>\n\nWe accept cash, bank transfer, and debit or credit cards.\n\n${KB.prices.paymentTerms} Prices are shown plus VAT unless stated.` +
+        generateActionButtons(['prices', 'book_service']);
+
+    case 'coverage': {
+      const town = intent.town;
+      const lead = town
+        ? `Yes, we cover <strong>${escapeHtml(town)}</strong>. 👍`
+        : `We cover <strong>${KB.coverage.summary}</strong>, from our base in Ware.`;
+      return `<strong>📍 Areas we cover</strong>\n\n${lead}\n\n<strong>Including:</strong> ${KB.coverage.towns.join(', ')}, and the villages in between.\n\n${KB.coverage.note} Not sure? Call <strong>${KB.company.phone}</strong> and we'll let you know.` +
+        generateActionButtons(['book_service', 'get_quote']);
+    }
 
     case 'booking':
       return showContactForm(intent.bookingType);
 
     case 'followup_booking': {
-      const typeLabel = { service: 'your boiler service', quote: 'a quote', repair: 'your repair', certificate: 'your gas safety certificate' }[intent.bookingType] || 'that';
-      return `<strong>Great, let's get ${typeLabel} booked in! 👍</strong>\n\nJust pop your details below and we'll be in touch:` + showContactForm(intent.bookingType);
+      const typeLabel = {
+        service: 'your boiler service', quote: 'your quote', repair: 'your repair',
+        certificate: 'your gas safety check', landlord: 'your landlord certificate',
+        aircon: 'your air conditioning interest', other: 'that'
+      }[intent.bookingType] || 'that';
+      return `<strong>Great, let's get ${typeLabel} sorted! 👍</strong>\n\nJust pop your details below:` + showContactForm(intent.bookingType);
     }
 
     default: {
       conversationContext.fallbackCount += 1;
       const intro = conversationContext.fallbackCount % 2 === 0
-        ? `Hmm, I'm not quite sure about that one — but I've passed it on to the team. In the meantime, here's what I can help with directly: 😊`
-        : `I'm here to help! 😊\n\n<strong>I can assist you with:</strong>\n• Pricing for services\n• Boiler servicing & repairs\n• New boiler installations\n• Plumbing, bathrooms & LPG\n• Landlord certificates\n• Water softeners\n• Coverage areas`;
-      return intro + `\n\n<strong>What would you like to know about?</strong>` + generateActionButtons(['prices', 'book_service', 'call_now']);
+        ? `Hmm, I'm not sure about that one, so I've passed it on to the team. In the meantime, here's what I can help with: 😊`
+        : `I'm not sure I've understood, sorry! 😊\n\n<strong>I can help with:</strong>\n• Prices\n• Boiler servicing and repairs\n• New boilers and heating\n• Plumbing, bathrooms and LPG\n• Landlord certificates\n• Air conditioning (from 2027)\n• Areas we cover`;
+      return intro + generateActionButtons(['prices', 'book_service', 'call_now']);
     }
   }
 }
 
 function generateActionButtons(actions) {
   const buttonMap = {
-    book_service: '<button class="action-btn" onclick="showBookingForm(\'service\')">📅 Book a Service</button>',
-    book_quote: '<button class="action-btn" onclick="showBookingForm(\'quote\')">📋 Get a Quote</button>',
-    book_repair: '<button class="action-btn" onclick="showBookingForm(\'repair\')">🔧 Book a Repair</button>',
-    book_cert: '<button class="action-btn" onclick="showBookingForm(\'certificate\')">📋 Book Certificate</button>',
-    call_now: '<button class="action-btn" onclick="quickCall()">📞 Call Now</button>',
-    emergency_call: '<button class="action-btn" onclick="quickCall()">📞 Call Now</button>',
-    more_services: '<button class="action-btn" onclick="quick(\'services\')">🔍 See All Services</button>',
-    boiler_service: '<button class="action-btn" onclick="quick(\'boiler-service\')">🔧 Boiler Service</button>',
-    installation: '<button class="action-btn" onclick="quick(\'installation\')">🔥 Installation</button>',
-    repairs: '<button class="action-btn" onclick="quick(\'repairs\')">🛠️ Repairs</button>',
-    get_quote: '<button class="action-btn" onclick="showBookingForm(\'quote\')">📝 Get Quote</button>',
-    prices: '<button class="action-btn" onclick="quick(\'prices\')">💰 View Prices</button>'
+    book_service: `<button class="action-btn" onclick="showBookingForm('service')">📅 Book a service</button>`,
+    book_repair: `<button class="action-btn" onclick="showBookingForm('repair')">🔧 Book a repair</button>`,
+    book_quote: `<button class="action-btn" onclick="showBookingForm('quote')">📋 Get a free quote</button>`,
+    get_quote: `<button class="action-btn" onclick="showBookingForm('quote')">📋 Get a free quote</button>`,
+    book_landlord: `<button class="action-btn" onclick="showBookingForm('landlord')">📋 Book a certificate</button>`,
+    book_other: `<button class="action-btn" onclick="showBookingForm('other')">📅 Book a visit</button>`,
+    book_aircon: `<button class="action-btn" onclick="showBookingForm('aircon')">❄️ Register interest</button>`,
+    call_now: `<button class="action-btn" onclick="quickCall()">📞 Call us</button>`,
+    prices: `<button class="action-btn" onclick="quick('prices')">💰 Prices</button>`,
+    plumbing_prices: `<button class="action-btn" onclick="quick('plumbing-prices')">🚿 Plumbing prices</button>`,
+    boiler_service: `<button class="action-btn" onclick="quick('boiler-service')">🔧 Boiler service</button>`,
+    installation: `<button class="action-btn" onclick="quick('installation')">🔥 New boiler</button>`,
+    repairs: `<button class="action-btn" onclick="quick('repairs')">🛠️ Repairs</button>`,
+    aircon: `<button class="action-btn" onclick="quick('aircon')">❄️ Air conditioning</button>`
   };
-
-  return '<div class="action-buttons">' +
-    actions.map(a => buttonMap[a] || '').join('') +
-    '</div>';
+  return '<div class="action-buttons">' + actions.map(a => buttonMap[a] || '').join('') + '</div>';
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -937,18 +847,26 @@ const BOOKING_JOBS = [
   { value: 'Landlord Certificate', label: 'Landlord gas safety certificate' },
   { value: 'General Callout', label: 'Other gas, heating or plumbing problem' },
   { value: 'quote', label: 'Quote for a new boiler or other work' },
+  { value: 'aircon', label: 'Air conditioning (register interest for 2027)' },
   { value: 'other', label: 'Something else' }
 ];
-const BOOKING_TYPE_TO_JOB = { service: 'Boiler Service', repair: 'Boiler Repair', certificate: 'Gas Safety Certificate', quote: 'quote' };
+const BOOKING_TYPE_TO_JOB = {
+  service: 'Boiler Service', repair: 'Boiler Repair', certificate: 'Gas Safety Certificate',
+  landlord: 'Landlord Certificate', quote: 'quote', aircon: 'aircon', other: 'other'
+};
 
 function showContactForm(bookingType) {
   const preselect = BOOKING_TYPE_TO_JOB[bookingType] || '';
   const jobOptions = BOOKING_JOBS.map(j =>
     `<option value="${j.value}"${j.value === preselect ? ' selected' : ''}>${j.label}</option>`
   ).join('');
+  const intro = bookingType === 'aircon'
+    ? `<strong>❄️ Register your interest</strong>
+    <p class="form-intro">Leave your details and we'll be in touch when we start fitting air conditioning in 2027.</p>`
+    : `<strong>📅 Let's get you booked in</strong>
+    <p class="form-intro">Fill in your details. For services, repairs and gas safety checks I'll suggest a day that suits our diary.</p>`;
   return `<div class="contact-form">
-    <strong>📅 Let's Get You Booked In!</strong>
-    <p style="font-size:0.9rem;margin:8px 0 16px 0;">Fill in your details. For services, repairs and gas safety checks I'll suggest a day that suits our diary:</p>
+    ${intro}
 
     <div class="form-group">
       <label for="form-job">What do you need? *</label>
@@ -997,8 +915,8 @@ function showContactForm(bookingType) {
       <i class="fas fa-paper-plane" aria-hidden="true"></i> Send Request
     </button>
 
-    <p style="font-size:0.75rem;color:#666;margin-top:12px;text-align:center;">
-      🔒 Your information is secure and will never be shared.
+    <p class="form-note">
+      🔒 Your details are only used to reply to you and are never shared.
     </p>
   </div>`;
 }
@@ -1008,7 +926,10 @@ function showBookingForm(type) {
     service: 'book a boiler service',
     quote: 'get a quote',
     repair: 'book a repair',
-    certificate: 'book a gas safety certificate'
+    certificate: 'book a gas safety check',
+    landlord: 'book a landlord gas safety certificate',
+    aircon: 'register my interest in air conditioning',
+    other: 'book a visit'
   };
 
   addMsg(`I'd like to ${typeMessages[type] || 'get in touch'}`, false);
@@ -1020,7 +941,7 @@ function showBookingForm(type) {
 function quickCall() {
   addMsg("I'd like to call you", false);
   setTimeout(() => {
-    addMsg(`Great! You can reach us on:\n\n<div class="price-box">📞 <strong>01920 468674</strong><br>or<br>📱 <strong>07971252440</strong></div>\n\nWe're always happy to chat!`, true);
+    addMsg(`You can reach ${KB.company.name} on:\n\n<div class="price-box">📞 <a href="tel:01920468674"><strong>01920 468674</strong></a><br>📱 <a href="tel:07971252440"><strong>07971 252440</strong></a></div>\n${KB.company.hours}. We're always happy to chat!`, true);
   }, 800);
 }
 
@@ -1079,7 +1000,7 @@ async function logUnanswered(question) {
 }
 
 function fallbackBookingMessage(name, postcode, phone) {
-  return `<strong>⚠️ Almost there, ${name}!</strong>\n\nPlease call us directly to complete your booking:\n\n<div class="price-box">📞 <strong>01920 468674</strong><br>or<br>📱 <strong>07971252440</strong></div>\n\nMention:\n• Name: ${name}\n• Postcode: ${postcode}\n• Phone: ${phone}`;
+  return `<strong>⚠️ Almost there, ${name}!</strong>\n\nPlease call us directly to complete your booking:\n\n<div class="price-box">📞 <strong>01920 468674</strong><br>or<br>📱 <strong>07971 252440</strong></div>\n\nMention:\n• Name: ${name}\n• Postcode: ${postcode}\n• Phone: ${phone}`;
 }
 
 // Sends the enquiry to the Wrights scheduler via this project's /api/lead
@@ -1267,7 +1188,10 @@ async function finishEnquiry(enquiry, slot, chatNote) {
   } else if (chatNote) {
     addMsg(`<strong>✅ Thank you, ${name}!</strong>\n\nNo problem. I've passed your details to Patrick and he'll call you at ${phone} to find a day that suits.\n\n${callUs}`, true);
   } else {
-    addMsg(`<strong>✅ Thank you, ${name}!</strong>\n\nYour request has been sent to our team. We'll contact you shortly at ${phone}.\n\n${callUs}`, true);
+    const next = enquiry.job === 'aircon'
+      ? `You're on our air conditioning list. We'll contact you at ${phone} as soon as we start booking installs in 2027.`
+      : `Your request has been sent to our team. We'll contact you shortly at ${phone}.`;
+    addMsg(`<strong>✅ Thank you, ${name}!</strong>\n\n${next}\n\n${callUs}`, true);
   }
 }
 
@@ -1328,11 +1252,11 @@ const HISTORY_LIMIT = 40;
 function renderMsg(html, fromBot) {
   const messagesDiv = document.getElementById('messages');
   const div = document.createElement('div');
-  div.className = fromBot ? 'bot msg' : 'user msg';
+  div.className = fromBot ? 'bot msg' : 'user-row msg';
 
   if (fromBot) {
     div.innerHTML = `
-      <div class="avatar" style="width:42px;height:42px;" aria-hidden="true">${flamey}</div>
+      <div class="avatar small" aria-hidden="true">${flamey}</div>
       <div class="bot-bubble">${html}</div>
     `;
   } else {
@@ -1340,7 +1264,12 @@ function renderMsg(html, fromBot) {
   }
 
   messagesDiv.appendChild(div);
-  div.scrollIntoView({behavior: 'smooth', block: 'end'});
+  // Scroll only the chat box (scrollIntoView would also jump the website page).
+  // Long answers are shown from their first line, so customers read from the top.
+  const top = fromBot && div.offsetHeight > messagesDiv.clientHeight
+    ? div.offsetTop - 8
+    : messagesDiv.scrollHeight;
+  messagesDiv.scrollTo({ top, behavior: 'smooth' });
   return div;
 }
 
@@ -1376,7 +1305,7 @@ function showTypingIndicator() {
   typingDiv.className = 'bot';
   typingDiv.id = 'typing-indicator';
   typingDiv.innerHTML = `
-    <div class="avatar" style="width:42px;height:42px;" aria-hidden="true">${flamey}</div>
+    <div class="avatar small" aria-hidden="true">${flamey}</div>
     <div class="bot-bubble">
       <div class="typing-indicator">
         <span></span><span></span><span></span>
@@ -1384,7 +1313,7 @@ function showTypingIndicator() {
     </div>
   `;
   messagesDiv.appendChild(typingDiv);
-  typingDiv.scrollIntoView({behavior: 'smooth', block: 'end'});
+  messagesDiv.scrollTo({ top: messagesDiv.scrollHeight, behavior: 'smooth' });
 }
 
 function removeTypingIndicator() {
@@ -1426,7 +1355,7 @@ async function send() {
 
   sendBtn.disabled = false;
   input.disabled = false;
-  input.focus();
+  if (!window.matchMedia("(pointer: coarse)").matches) input.focus(); // no keyboard pop-up on phones
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -1441,7 +1370,10 @@ function quick(type) {
     'water-softener': 'Tell me about water softeners',
     'lpg': 'Tell me about LPG',
     'services': 'What services do you offer?',
-    'repairs': 'I need a boiler repair'
+    'repairs': 'I need a boiler repair',
+    'aircon': 'Tell me about air conditioning',
+    'plumbing-prices': 'How much are your plumbing prices?',
+    'contact': 'What are your opening hours?'
   };
 
   document.getElementById('user-input').value = questions[type] || '';
