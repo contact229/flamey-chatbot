@@ -1,0 +1,29 @@
+{
+  "updated": "2026-11-08",
+  "posts": [
+    {
+      "id": "2026-11-air-conditioning-2027",
+      "date": "2026-11-08",
+      "tag": "Coming in 2027",
+      "title": "Air conditioning installation is coming in 2027",
+      "body": "From 2027, Wrights Heating & Gas will be installing and servicing air conditioning, from single-room split systems for bedrooms and home offices to multi-room systems for the whole house. If you're thinking about cooling for next summer, let us know now and we'll be in touch as soon as bookings open.",
+      "cta": { "label": "Register your interest", "href": "tel:01920468674", "note": "Call 01920 468674 or ask Flamey" }
+    },
+    {
+      "id": "2026-11-winter-boiler-service",
+      "date": "2026-11-08",
+      "tag": "Winter",
+      "title": "Get your boiler serviced before the cold sets in",
+      "body": "An annual service keeps your boiler running safely and efficiently, and most manufacturers need one each year to keep your warranty valid. Winter is our busiest time, so book early to get a date that suits you.",
+      "cta": { "label": "Book a boiler service", "href": "tel:01920468674", "note": "Call 01920 468674 or ask Flamey" }
+    },
+    {
+      "id": "2026-11-landlord-certificates",
+      "date": "2026-11-08",
+      "tag": "Landlords",
+      "title": "Landlord gas safety certificates",
+      "body": "Landlords must have every gas appliance in a rented home checked by a Gas Safe registered engineer every 12 months, and give tenants a copy of the record. We can check your appliances and issue the certificate in a single visit.",
+      "cta": { "label": "Book a certificate", "href": "tel:01920468674", "note": "Call 01920 468674 or ask Flamey" }
+    }
+  ]
+}

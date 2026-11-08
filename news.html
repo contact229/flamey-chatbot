@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>News and offers – Wrights Heating & Gas</title>
+<meta name="description" content="Latest news and offers from Wrights Heating & Gas Services Ltd, Ware, Hertfordshire." />
+<style>
+  :root {
+    --pink: #c2177a;          /* brand pink, darkened to pass 4.5:1 on white */
+    --purple: #5a2d82;
+    --ink: #1f1530;
+    --muted: #5c5068;
+    --card: #ffffff;
+    --line: #eadff2;
+    --tint: #fbf3fa;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    line-height: 1.55;
+    padding: 4px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .head {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    justify-content: space-between; gap: 6px 16px; margin: 0 0 14px;
+  }
+  h2 { margin: 0; font-size: 1.5rem; color: var(--purple); letter-spacing: -0.01em; }
+  .sub { margin: 0; font-size: 0.9rem; color: var(--muted); }
+  .grid {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  article {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 10px;
+  }
+  article.featured { background: var(--tint); border-color: #e6c9e0; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--muted); }
+  .tag {
+    background: #f6e3f0; color: #8a0f56; font-weight: 600;
+    padding: 3px 9px; border-radius: 999px;
+  }
+  h3 { margin: 0; font-size: 1.12rem; line-height: 1.3; }
+  p.body { margin: 0; font-size: 0.95rem; flex: 1; }
+  .cta { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+  .cta a {
+    align-self: flex-start; display: inline-flex; align-items: center; min-height: 44px;
+    padding: 0 18px; border-radius: 10px; background: var(--purple); color: #fff;
+    font-weight: 600; font-size: 0.95rem; text-decoration: none;
+  }
+  .cta a:hover, .cta a:focus-visible { background: #43206a; }
+  .cta a:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+  .cta small { color: var(--muted); font-size: 0.8rem; }
+  .status { color: var(--muted); font-size: 0.95rem; }
+  .skeleton article { min-height: 190px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h2>News and offers</h2>
+    <p class="sub">From Wrights Heating &amp; Gas Services Ltd</p>
+  </div>
+  <div id="posts" class="grid" aria-live="polite">
+    <p class="status">Loading the latest news…</p>
+  </div>
+</div>
+
+<script>
+  // Posts live in news.json beside this page. To add or change a post, edit
+  // that file only; this page shows the newest three.
+  const MAX_POSTS = 3;
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function safeHref(href) {
+    const h = String(href || '');
+    return /^(https:\/\/|tel:|mailto:)/i.test(h) ? h : '';
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso + 'T12:00:00');
+    return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  function render(posts) {
+    const box = document.getElementById('posts');
+    if (!posts.length) {
+      box.innerHTML = '<p class="status">No news right now. Call us on 01920 468674.</p>';
+      return;
+    }
+    box.innerHTML = posts.map((p, i) => {
+      const href = p.cta && safeHref(p.cta.href);
+      const cta = href
+        ? `<div class="cta"><a href="${esc(href)}" target="_top">${esc(p.cta.label)}</a>${p.cta.note ? `<small>${esc(p.cta.note)}</small>` : ''}</div>`
+        : '';
+      return `<article class="${i === 0 ? 'featured' : ''}">
+        <div class="meta">${p.tag ? `<span class="tag">${esc(p.tag)}</span>` : ''}<time datetime="${esc(p.date)}">${esc(formatDate(p.date))}</time></div>
+        <h3>${esc(p.title)}</h3>
+        <p class="body">${esc(p.body)}</p>
+        ${cta}
+      </article>`;
+    }).join('');
+  }
+
+  fetch('news.json', { cache: 'no-cache' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(data => {
+      const posts = (data.posts || [])
+        .filter(p => p && p.title && p.body)
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+        .slice(0, MAX_POSTS);
+      render(posts);
+    })
+    .catch(() => {
+      document.getElementById('posts').innerHTML =
+        '<p class="status">News couldn’t load just now. Call us on 01920 468674.</p>';
+    });
+</script>
+</body>
+</html>
