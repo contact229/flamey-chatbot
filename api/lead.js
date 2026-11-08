@@ -18,6 +18,8 @@ const FIELDS = {
   notes: 2000,
 };
 
+const JOB_TYPES = ['Boiler Service', 'Boiler Repair', 'Gas Safety Certificate', 'Landlord Certificate', 'General Callout'];
+
 function clean(value, maxLength) {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
@@ -51,6 +53,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Please enter a phone number or email' });
   }
 
+  // The job type picked on the form, and a slot the customer agreed to in the
+  // chat. The scheduler re-checks the slot itself before holding it.
+  if (JOB_TYPES.includes(body.jobTypeName)) lead.jobTypeName = body.jobTypeName;
+  const slot = body.agreedSlot;
+  if (slot && typeof slot === 'object' && JOB_TYPES.includes(slot.jobTypeName) &&
+      /^\d{4}-\d{2}-\d{2}$/.test(String(slot.date)) && /^\d{2}:\d{2}$/.test(String(slot.startTime))) {
+    lead.agreedSlot = { jobTypeName: slot.jobTypeName, date: slot.date, startTime: slot.startTime };
+  }
+
   try {
     const response = await fetch(`${schedulerUrl}/chatbot/lead`, {
       method: 'POST',
@@ -64,7 +75,8 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'Booking could not be sent' });
     }
 
-    return res.status(200).json({ ok: true });
+    const data = await response.json().catch(() => ({}));
+    return res.status(200).json({ ok: true, slotStatus: data.slotStatus || 'none' });
   } catch (err) {
     console.error('Could not reach scheduler', err);
     return res.status(502).json({ error: 'Booking could not be sent' });

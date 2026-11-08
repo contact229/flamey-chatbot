@@ -338,6 +338,7 @@
     }
 
     .form-group input,
+    .form-group select,
     .form-group textarea {
       width: 100%;
       padding: 10px 14px;
@@ -348,6 +349,7 @@
     }
 
     .form-group input:focus,
+    .form-group select:focus,
     .form-group textarea:focus {
       outline: none;
       border-color: var(--pink);
@@ -364,6 +366,30 @@
       font-weight: 600;
       cursor: pointer;
     }
+
+    .form-group select { background: #fff; }
+
+    .slot-offer {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border: 2px solid var(--pink);
+      border-radius: 10px;
+      background: #fff4f9;
+      font-size: 0.95rem;
+    }
+    .slot-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .slot-actions button {
+      min-height: 44px;
+      padding: 0 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .slot-actions .slot-yes { background: var(--deep-purple); color: #fff; border: 2px solid var(--deep-purple); }
+    .slot-actions .slot-other { background: #fff; color: var(--deep-purple); border: 2px solid var(--deep-purple); }
+    .slot-actions button:disabled { opacity: 0.5; cursor: default; }
 
     @media (max-width: 480px) {
       #chat-container {
@@ -861,11 +887,11 @@ function generateResponse(intent, userMessage) {
       generateActionButtons(['book_service', 'get_quote']);
 
     case 'booking':
-      return showContactForm();
+      return showContactForm(intent.bookingType);
 
     case 'followup_booking': {
       const typeLabel = { service: 'your boiler service', quote: 'a quote', repair: 'your repair', certificate: 'your gas safety certificate' }[intent.bookingType] || 'that';
-      return `<strong>Great, let's get ${typeLabel} booked in! 👍</strong>\n\nJust pop your details below and we'll be in touch:` + showContactForm();
+      return `<strong>Great, let's get ${typeLabel} booked in! 👍</strong>\n\nJust pop your details below and we'll be in touch:` + showContactForm(intent.bookingType);
     }
 
     default: {
@@ -902,10 +928,35 @@ function generateActionButtons(actions) {
 // ════════════════════════════════════════════════════════════════════════════════
 // CONTACT FORM
 // ════════════════════════════════════════════════════════════════════════════════
-function showContactForm() {
+// What the customer can pick on the booking form. Those with a scheduler job
+// type can be offered a day in the chat; the rest come through as an enquiry.
+const BOOKING_JOBS = [
+  { value: 'Boiler Service', label: 'Boiler service' },
+  { value: 'Boiler Repair', label: 'Boiler repair or breakdown' },
+  { value: 'Gas Safety Certificate', label: 'Gas safety check (homeowner)' },
+  { value: 'Landlord Certificate', label: 'Landlord gas safety certificate' },
+  { value: 'General Callout', label: 'Other gas, heating or plumbing problem' },
+  { value: 'quote', label: 'Quote for a new boiler or other work' },
+  { value: 'other', label: 'Something else' }
+];
+const BOOKING_TYPE_TO_JOB = { service: 'Boiler Service', repair: 'Boiler Repair', certificate: 'Gas Safety Certificate', quote: 'quote' };
+
+function showContactForm(bookingType) {
+  const preselect = BOOKING_TYPE_TO_JOB[bookingType] || '';
+  const jobOptions = BOOKING_JOBS.map(j =>
+    `<option value="${j.value}"${j.value === preselect ? ' selected' : ''}>${j.label}</option>`
+  ).join('');
   return `<div class="contact-form">
     <strong>📅 Let's Get You Booked In!</strong>
-    <p style="font-size:0.9rem;margin:8px 0 16px 0;">Fill in your details and we'll be in touch shortly:</p>
+    <p style="font-size:0.9rem;margin:8px 0 16px 0;">Fill in your details. For services, repairs and gas safety checks I'll suggest a day that suits our diary:</p>
+
+    <div class="form-group">
+      <label for="form-job">What do you need? *</label>
+      <select id="form-job">
+        <option value=""${preselect ? '' : ' selected'}>Choose one…</option>
+        ${jobOptions}
+      </select>
+    </div>
 
     <div class="form-group">
       <label for="form-name">Full Name *</label>
@@ -962,7 +1013,7 @@ function showBookingForm(type) {
 
   addMsg(`I'd like to ${typeMessages[type] || 'get in touch'}`, false);
   setTimeout(() => {
-    addMsg(showContactForm(), true);
+    addMsg(showContactForm(type), true);
   }, 800);
 }
 
@@ -1034,6 +1085,8 @@ function fallbackBookingMessage(name, postcode, phone) {
 // Sends the enquiry to the Wrights scheduler via this project's /api/lead
 // function, which holds the scheduler's key server-side. It lands as a pending
 // lead on the scheduler's admin screen; nothing is booked automatically.
+// slotStatus says whether an agreed slot was held ('held'), had just gone
+// ('taken'), or there was none ('none').
 async function sendToScheduler(lead) {
   try {
     const res = await fetch('/api/lead', {
@@ -1041,10 +1094,180 @@ async function sendToScheduler(lead) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(lead)
     });
-    return { success: res.ok };
+    const data = await res.json().catch(() => ({}));
+    return { success: res.ok, slotStatus: data.slotStatus || 'none' };
   } catch (error) {
     console.error('Scheduler lead error:', error);
-    return { success: false };
+    return { success: false, slotStatus: 'none' };
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// SLOT OFFERS — Flamey suggests a day from Patrick's diary. If the customer
+// agrees, the slot is sent with their lead and held for them; Patrick then
+// confirms it from his lead box. Nothing is booked from the chat itself.
+// ════════════════════════════════════════════════════════════════════════════════
+const SLOT_JOB_TYPES = ['Boiler Service', 'Boiler Repair', 'Gas Safety Certificate', 'Landlord Certificate', 'General Callout'];
+const MAX_SLOT_OFFERS = 3;
+const pendingBookings = {}; // offer id -> { enquiry, slot, offered: [dates] }; in memory only, so old offers can't be reused after a reload
+
+function jobLabel(value) {
+  const job = BOOKING_JOBS.find(j => j.value === value);
+  return job ? job.label : 'Enquiry';
+}
+
+function friendlyTime(hhmm) {
+  const [h, m] = String(hhmm).split(':').map(Number);
+  const suffix = h >= 12 ? 'pm' : 'am';
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  return m ? `${hour}:${String(m).padStart(2, '0')}${suffix}` : `${hour}${suffix}`;
+}
+
+function friendlySlot(slot) {
+  const day = new Date(slot.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  return `${day}, arriving between ${friendlyTime(slot.windowStart)} and ${friendlyTime(slot.windowEnd)}`;
+}
+
+async function requestSlot(enquiry, excludeDates) {
+  try {
+    const res = await fetch('/api/slot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jobTypeName: enquiry.job,
+        postcode: enquiry.postcode,
+        addressLine1: enquiry.address,
+        city: enquiry.town,
+        excludeDates
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    const valid = res.ok && data.outcome === 'slot' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(String(data.date)) &&
+      /^\d{2}:\d{2}$/.test(String(data.windowStart)) && /^\d{2}:\d{2}$/.test(String(data.windowEnd));
+    return valid ? { jobTypeName: data.jobTypeName, date: data.date, windowStart: data.windowStart, windowEnd: data.windowEnd } : null;
+  } catch (error) {
+    console.error('Slot request failed:', error);
+    return null;
+  }
+}
+
+function offerSlot(enquiry, slot, previouslyOffered) {
+  const id = 'offer-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  pendingBookings[id] = { enquiry, slot, offered: [...previouslyOffered, slot.date] };
+  const intro = previouslyOffered.length
+    ? `How about this instead, ${escapeHtml(enquiry.name)}?`
+    : `Thanks, ${escapeHtml(enquiry.name)}! The best day I can see for your ${escapeHtml(jobLabel(enquiry.job).toLowerCase())} is:`;
+  addMsg(`${intro}
+<div class="slot-offer">
+  <strong>📅 ${escapeHtml(friendlySlot(slot))}</strong>
+  <div style="font-size:0.85rem;margin-top:6px;">Patrick will confirm it with you before it's booked.</div>
+  <div class="slot-actions">
+    <button class="slot-yes" onclick="acceptSlot('${id}', this)">Yes, that works</button>
+    <button class="slot-other" onclick="anotherSlot('${id}', this)">Another day</button>
+    <button class="slot-other" onclick="skipSlot('${id}', this)">Just call me</button>
+  </div>
+</div>`, true);
+}
+
+// Each offer can be answered once; buttons in saved chat history from an
+// earlier visit have no matching offer, so they just say it has expired.
+function takeOffer(id, button) {
+  const box = button && button.closest('.slot-offer');
+  if (box) box.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  const state = pendingBookings[id];
+  delete pendingBookings[id];
+  if (!state) addMsg('That offer has expired. Fill in the booking form again and I\'ll find you a fresh day. 😊', true);
+  return state;
+}
+
+async function acceptSlot(id, button) {
+  const state = takeOffer(id, button);
+  if (!state) return;
+  addMsg('Yes, that works', false);
+  await finishEnquiry(state.enquiry, state.slot);
+}
+
+async function anotherSlot(id, button) {
+  const state = takeOffer(id, button);
+  if (!state) return;
+  addMsg('Do you have another day?', false);
+  if (state.offered.length >= MAX_SLOT_OFFERS) {
+    await finishEnquiry(state.enquiry, null, `Customer didn't take the days offered in the chat (${state.offered.join(', ')}). Please agree a day with them.`);
+    return;
+  }
+  showTypingIndicator();
+  const next = await requestSlot(state.enquiry, state.offered);
+  removeTypingIndicator();
+  if (next) offerSlot(state.enquiry, next, state.offered);
+  else await finishEnquiry(state.enquiry, null, `No other day could be offered in the chat (already offered: ${state.offered.join(', ')}).`);
+}
+
+async function skipSlot(id, button) {
+  const state = takeOffer(id, button);
+  if (!state) return;
+  addMsg('Just call me', false);
+  await finishEnquiry(state.enquiry, null, 'Customer asked to be called rather than pick a day in the chat.');
+}
+
+// Sends the enquiry to Patrick's inbox and the scheduler together; the customer
+// sees success if either gets through, so a scheduler outage never loses one.
+async function finishEnquiry(enquiry, slot, chatNote) {
+  const name = escapeHtml(enquiry.name);
+  const phone = escapeHtml(enquiry.phone);
+  const slotText = slot ? friendlySlot(slot) : '';
+  const notes = [
+    enquiry.message ? `From Flamey: ${enquiry.message}` : 'From Flamey (no message left)',
+    slot ? `Agreed in the chat: ${slotText}.` : '',
+    chatNote || ''
+  ].filter(Boolean).join(' ');
+
+  const [emailResult, schedulerResult] = await Promise.all([
+    sendToWeb3Forms({
+      subject: slot
+        ? `New Flamey booking request from ${enquiry.name}: ${slotText}`
+        : `New Flamey enquiry from ${enquiry.name}`,
+      from_name: enquiry.name,
+      name: enquiry.name,
+      job: jobLabel(enquiry.job),
+      requested_slot: slot ? `${slotText} (customer agreed; confirm it in the scheduler's Flamey leads card)` : 'None',
+      phone: enquiry.phone,
+      address: enquiry.address || 'Not provided',
+      town: enquiry.town || 'Not provided',
+      postcode: enquiry.postcode,
+      email: enquiry.email || 'Not provided',
+      message: enquiry.message || 'No message provided',
+      chat_note: chatNote || 'None',
+      page: location.href,
+      timestamp: new Date().toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short' })
+    }),
+    sendToScheduler({
+      customerName: enquiry.name,
+      addressLine1: enquiry.address,
+      city: enquiry.town,
+      postcode: enquiry.postcode,
+      phone: enquiry.phone,
+      email: enquiry.email,
+      jobTypeName: SLOT_JOB_TYPES.includes(enquiry.job) ? enquiry.job : undefined,
+      requestedJobTypeText: jobLabel(enquiry.job),
+      notes,
+      agreedSlot: slot ? { jobTypeName: slot.jobTypeName, date: slot.date, startTime: slot.windowStart } : undefined
+    })
+  ]);
+
+  const callUs = `<div class="info-box">📞 Need to speak to us sooner? Call <strong>01920 468674</strong></div>`;
+  if (!emailResult.success && !schedulerResult.success) {
+    addMsg(fallbackBookingMessage(name, escapeHtml(enquiry.postcode), phone), true);
+  } else if (slot && schedulerResult.success && schedulerResult.slotStatus === 'held') {
+    addMsg(`<strong>✅ Thank you, ${name}!</strong>\n\nI've pencilled you in for <strong>${escapeHtml(slotText)}</strong> and held it for you. Patrick will confirm your booking shortly${enquiry.email ? ' by email' : ` on ${phone}`}.\n\n${callUs}`, true);
+  } else if (slot && schedulerResult.success && schedulerResult.slotStatus === 'taken') {
+    addMsg(`<strong>Thank you, ${name}.</strong>\n\nSorry, that slot was taken a moment ago. I've passed your details to Patrick and he'll be in touch at ${phone} to arrange another day.\n\n${callUs}`, true);
+  } else if (slot) {
+    addMsg(`<strong>✅ Thank you, ${name}!</strong>\n\nI've sent your request for <strong>${escapeHtml(slotText)}</strong> to our team. Patrick will confirm whether it's still free, or arrange another day with you at ${phone}.\n\n${callUs}`, true);
+  } else if (chatNote) {
+    addMsg(`<strong>✅ Thank you, ${name}!</strong>\n\nNo problem. I've passed your details to Patrick and he'll call you at ${phone} to find a day that suits.\n\n${callUs}`, true);
+  } else {
+    addMsg(`<strong>✅ Thank you, ${name}!</strong>\n\nYour request has been sent to our team. We'll contact you shortly at ${phone}.\n\n${callUs}`, true);
   }
 }
 
@@ -1055,65 +1278,42 @@ async function submitContactForm(button) {
   const form = (button && button.closest('.contact-form')) ||
     [...document.querySelectorAll('.contact-form')].pop() || document;
   const field = (id) => form.querySelector('#' + id)?.value.trim();
-  const rawName = field('form-name');
-  const rawAddress = field('form-address');
-  const rawTown = field('form-town');
-  const rawPostcode = field('form-postcode');
-  const rawPhone = field('form-phone');
-  const rawEmail = field('form-email');
-  const rawMessage = field('form-message');
+  const enquiry = {
+    job: field('form-job'),
+    name: field('form-name'),
+    address: field('form-address'),
+    town: field('form-town'),
+    postcode: field('form-postcode'),
+    phone: field('form-phone'),
+    email: field('form-email'),
+    message: field('form-message')
+  };
 
-  if (!rawName || !rawPostcode || !rawPhone) {
-    addMsg("⚠️ Please fill in all required fields (Name, Postcode, Phone)", true);
+  if (!enquiry.job || !enquiry.name || !enquiry.postcode || !enquiry.phone) {
+    addMsg("⚠️ Please fill in all required fields (what you need, name, postcode and phone)", true);
     return;
   }
 
-  const name = escapeHtml(rawName);
-  const postcode = escapeHtml(rawPostcode);
-  const phone = escapeHtml(rawPhone);
-
   const submitBtn = button || form.querySelector('.submit-btn');
   const originalText = submitBtn.innerHTML;
-  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
   submitBtn.disabled = true;
 
-  // Email and scheduler are sent together; the customer sees success if either
-  // one gets through, so a scheduler outage never loses an enquiry.
-  const [emailResult, schedulerResult] = await Promise.all([
-    sendToWeb3Forms({
-      subject: `New Flamey enquiry from ${rawName}`,
-      from_name: rawName,
-      name: rawName,
-      phone: rawPhone,
-      address: rawAddress || 'Not provided',
-      town: rawTown || 'Not provided',
-      postcode: rawPostcode,
-      email: rawEmail || 'Not provided',
-      message: rawMessage || 'No message provided',
-      page: location.href,
-      timestamp: new Date().toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short' })
-    }),
-    sendToScheduler({
-      customerName: rawName,
-      addressLine1: rawAddress,
-      city: rawTown,
-      postcode: rawPostcode,
-      phone: rawPhone,
-      email: rawEmail,
-      requestedJobTypeText: rawMessage ? rawMessage.slice(0, 200) : 'Website enquiry',
-      notes: rawMessage ? `From Flamey: ${rawMessage}` : 'From Flamey (no message left)'
-    })
-  ]);
-
-  if (emailResult.success || schedulerResult.success) {
-    addMsg(`<strong>✅ Thank you, ${name}!</strong>\n\nYour request has been sent to our team. We'll contact you shortly at ${phone}.\n\n<div class="info-box">📞 Need to speak to us sooner? Call <strong>01920 468674</strong></div>`, true);
-  } else {
-    addMsg(fallbackBookingMessage(name, postcode, phone), true);
-  }
-
-  if (submitBtn) {
-    submitBtn.innerHTML = originalText;
-    submitBtn.disabled = false;
+  try {
+    if (SLOT_JOB_TYPES.includes(enquiry.job)) {
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finding a day...';
+      const slot = await requestSlot(enquiry, []);
+      if (slot) {
+        offerSlot(enquiry, slot, []);
+        return;
+      }
+    }
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    await finishEnquiry(enquiry, null);
+  } finally {
+    if (submitBtn) {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
   }
 }
 
