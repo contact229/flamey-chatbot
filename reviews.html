@@ -97,6 +97,29 @@
     .credit { margin-left: 0; width: 100%; }
     .btn { min-height: 44px; padding: 0 12px; font-size: 0.85rem; }
   }
+
+  /* Short boxes (about 200px tall on a phone): rating on one line, slim
+     review cards to swipe, and small buttons. */
+  @media (max-height: 300px) {
+    body { padding: 2px; line-height: 1.35; }
+    .wrap { gap: 5px; }
+    h2 { display: none; }
+    .head { justify-content: flex-start; }
+    .summary { font-size: 0.8rem; gap: 6px; }
+    .summary strong { font-size: 1rem; }
+    .card { flex: 0 0 88%; padding: 9px 11px; gap: 4px; border-radius: 12px; }
+    .avatar { width: 26px; height: 26px; flex-basis: 26px; font-size: 0.8rem; }
+    .who { gap: 8px; }
+    .name { font-size: 0.85rem; }
+    .when { font-size: 0.72rem; }
+    .rtext { font-size: 0.8rem; }
+    .rtext.cut::after { height: 1.6em; }
+    .more { font-size: 0.75rem; }
+    .arrow, .hint, .credit { display: none; }
+    .foot { gap: 6px; flex-wrap: nowrap; }
+    .btn { min-height: 32px; padding: 0 10px; font-size: 0.78rem; border-radius: 8px; white-space: nowrap; }
+    .btn.line { border-width: 1.5px; }
+  }
 </style>
 </head>
 <body>
