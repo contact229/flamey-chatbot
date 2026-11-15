@@ -1427,7 +1427,9 @@ window.addEventListener('DOMContentLoaded', function() {
   // the booking form straight away: add ?book to the address, or ?book=service,
   // repair, quote, landlord or aircon to start on that kind of job.
   const params = new URLSearchParams(window.location.search);
-  if (params.has('book')) {
+  // book.wrightsgas.co.uk is the booking address, so it opens the form by itself
+  const bookingAddress = /^book\./i.test(window.location.hostname);
+  if (params.has('book') || bookingAddress) {
     const wanted = (params.get('book') || '').toLowerCase();
     const type = ['service', 'repair', 'quote', 'landlord', 'certificate', 'aircon'].includes(wanted) ? wanted : 'other';
     setTimeout(() => showBookingForm(type), 1400);
