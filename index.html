@@ -1422,6 +1422,16 @@ window.addEventListener('DOMContentLoaded', function() {
       addMsg(generateResponse({ intent: 'greeting' }, ''), true);
     }, 500);
   }
+
+  // A booking link (e.g. the "Book online" button on the Google listing) opens
+  // the booking form straight away: add ?book to the address, or ?book=service,
+  // repair, quote, landlord or aircon to start on that kind of job.
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('book')) {
+    const wanted = (params.get('book') || '').toLowerCase();
+    const type = ['service', 'repair', 'quote', 'landlord', 'certificate', 'aircon'].includes(wanted) ? wanted : 'other';
+    setTimeout(() => showBookingForm(type), 1400);
+  }
 });
 
 document.getElementById('user-input').onkeypress = (e) => {
